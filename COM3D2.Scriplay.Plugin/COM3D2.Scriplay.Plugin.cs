@@ -23,13 +23,13 @@ namespace COM3D2.Scriplay.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("0.1.1.1")]
+    [PluginVersion("0.1.1.2")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
         private void initMaidList()
         {
-            Util.info("メイド一覧読み込み開始");
+            Util.info("메이드 목록을 불러오는 시작");
             ScriplayPlugin.maidList.Clear();
             ScriplayPlugin.manList.Clear();
             CharacterMgr characterMgr = GameMain.Instance.CharacterMgr;
@@ -1131,7 +1131,7 @@ namespace COM3D2.Scriplay.Plugin
                 bool flag = text.Equals("");
                 if (flag)
                 {
-                    Util.info("表情リストが空でした");
+                    Util.info("표정 목록이 비었습니다");
                 }
                 else
                 {
@@ -3633,7 +3633,7 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x0600001E RID: 30 RVA: 0x00003FED File Offset: 0x000021ED
         public static void info(string message)
         {
-            Console.WriteLine("I " + Util.PluginMessage(message));
+            Console.WriteLine("[Scriplay]" + Util.PluginMessage(message));
         }
 
         // Token: 0x0600001F RID: 31 RVA: 0x00004008 File Offset: 0x00002208
@@ -3642,7 +3642,7 @@ namespace COM3D2.Scriplay.Plugin
             bool debugMode = ScriplayPlugin.cfg.debugMode;
             if (debugMode)
             {
-                UnityEngine.Debug.Log("D " + Util.PluginMessage(message));
+                UnityEngine.Debug.Log("[Scriplay]" + Util.PluginMessage(message));
             }
         }
 
