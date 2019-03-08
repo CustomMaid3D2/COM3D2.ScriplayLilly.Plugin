@@ -255,9 +255,11 @@ namespace COM3D2.Scriplay.Plugin
                     this.node_showArea = GUI.Window(22, this.node_showArea, new GUI.WindowFunction(this.WindowCallback_showArea), "", guistyle);
                 }
                 bool flag3 = this.en_showScripts && this.scriplayContext.scriptFinished;
+                //bool flag3 =  this.scriplayContext.scriptFinished;
                 if (flag3)
                 {
-                    this.node_scripts = GUI.Window(23, this.node_scripts, new GUI.WindowFunction(this.WindowCallback_scriptsView), ScriplayPlugin.cfg.PluginName + "スクリプト一覧", guistyle);
+                    //this.en_showScripts = true;
+                    this.node_scripts = GUI.Window(23, this.node_scripts, new GUI.WindowFunction(this.WindowCallback_scriptsView), ScriplayPlugin.cfg.PluginName + "스크립트 목록", guistyle);
                 }
             }
         }
@@ -269,6 +271,11 @@ namespace COM3D2.Scriplay.Plugin
         }
 
         // Token: 0x0600000D RID: 13 RVA: 0x00002A74 File Offset: 0x00000C74
+
+        /// <summary>
+        /// 스크립트 창 표시 및 각 스크립트마다 실행 부여
+        /// </summary>
+        /// <param name="id"></param>
         private void WindowCallback_scriptsView(int id)
         {
             GUILayout.Space(20f);
@@ -287,6 +294,11 @@ namespace COM3D2.Scriplay.Plugin
         }
 
         // Token: 0x0600000E RID: 14 RVA: 0x00002B20 File Offset: 0x00000D20
+
+        /// <summary>
+        /// 스크립트 실행시
+        /// </summary>
+        /// <param name="id"></param>
         private void WindowCallback_showArea(int id)
         {
             GUIStyle guistyle = new GUIStyle("button");
@@ -307,12 +319,19 @@ namespace COM3D2.Scriplay.Plugin
             {
                 GUILayout.Label(this.scriplayContext.showText, this.gsLabel, new GUILayoutOption[0]);
             }
-            foreach (ScriplayContext.Selection selection in this.scriplayContext.selection_selectionList)
+            //foreach (ScriplayContext.Selection selection in this.scriplayContext.selection_selectionList)
+            //{
+            //    bool flag3 = GUILayout.Button(selection.viewStr, this.gsButton, new GUILayoutOption[0]);
+            //    if (flag3)
+            //    {
+            //        this.scriplayContext.selection_selectedItem = selection;
+            //    }
+            //}
+            foreach (ScriplayContext.Selection s in scriplayContext.selection_selectionList)
             {
-                bool flag3 = GUILayout.Button(selection.viewStr, this.gsButton, new GUILayoutOption[0]);
-                if (flag3)
+                if (GUILayout.Button(s.viewStr, gsButton))
                 {
-                    this.scriplayContext.selection_selectedItem = selection;
+                    scriplayContext.selection_selectedItem = s;
                 }
             }
             GUILayout.EndScrollView();
@@ -356,12 +375,12 @@ namespace COM3D2.Scriplay.Plugin
                 bool flag4 = this.en_showScripts;
                 if (flag4)
                 {
-                    this.scripts_fullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.scriptsPath, "md");
-                    Util.info(string.Format("다음 스크립트 발견", new object[0]));
-                    foreach (string message in this.scripts_fullpathList)
-                    {
-                        Util.info(message);
-                    }
+                  this.scripts_fullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.scriptsPath, "md");
+                  Util.info(string.Format("다음 스크립트 발견", new object[0]));
+                  foreach (string message in this.scripts_fullpathList)
+                  {
+                      Util.info(message);
+                  }
                 }
             }
             GUILayout.EndHorizontal();
@@ -2515,11 +2534,9 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000036 RID: 54 RVA: 0x000048D4 File Offset: 0x00002AD4
         public void Update()
         {
-            bool flag = ScriplayPlugin.maidList.Count == 0;
-            if (!flag)
+            //if (ScriplayPlugin.maidList.Count > 0)
             {
-                bool flag2 = this.waitSecond > 0f;
-                if (flag2)
+                if (this.waitSecond > 0f)
                 {
                     this.waitSecond -= Time.deltaTime;
                 }
@@ -2537,12 +2554,10 @@ namespace COM3D2.Scriplay.Plugin
                     }
                     else
                     {
-                        bool flag5 = this.selection_waitSecond > 0f;
-                        if (flag5)
+                        if (this.selection_waitSecond > 0f)
                         {
                             this.selection_waitSecond -= Time.deltaTime;
-                            bool flag6 = this.selection_waitSecond < 0f;
-                            if (flag6)
+                            if ( this.selection_waitSecond < 0f)
                             {
                                 this.selection_selectionList = new List<ScriplayContext.Selection>();
                             }
