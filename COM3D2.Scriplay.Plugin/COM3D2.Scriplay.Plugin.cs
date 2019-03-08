@@ -319,21 +319,20 @@ namespace COM3D2.Scriplay.Plugin
             {
                 GUILayout.Label(this.scriplayContext.showText, this.gsLabel, new GUILayoutOption[0]);
             }
-            //foreach (ScriplayContext.Selection selection in this.scriplayContext.selection_selectionList)
-            //{
-            //    bool flag3 = GUILayout.Button(selection.viewStr, this.gsButton, new GUILayoutOption[0]);
-            //    if (flag3)
-            //    {
-            //        this.scriplayContext.selection_selectedItem = selection;
-            //    }
-            //}
-            foreach (ScriplayContext.Selection s in scriplayContext.selection_selectionList)
+            foreach (ScriplayContext.Selection selection in this.scriplayContext.selection_selectionList)
             {
-                if (GUILayout.Button(s.viewStr, gsButton))
+                if (GUILayout.Button(selection.viewStr, this.gsButton, new GUILayoutOption[0]))
                 {
-                    scriplayContext.selection_selectedItem = s;
+                    this.scriplayContext.selection_selectedItem = selection;
                 }
             }
+            //foreach (ScriplayContext.Selection s in scriplayContext.selection_selectionList)
+            //{
+            //    if (GUILayout.Button(s.viewStr, gsButton))
+            //    {
+            //        scriplayContext.selection_selectedItem = s;
+            //    }
+            //}
             GUILayout.EndScrollView();
             GUI.DragWindow();
         }
