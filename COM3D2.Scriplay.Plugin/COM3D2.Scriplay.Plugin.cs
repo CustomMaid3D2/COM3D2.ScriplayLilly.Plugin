@@ -238,27 +238,27 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x0600000B RID: 11 RVA: 0x00002724 File Offset: 0x00000924
         private void OnGUI()
         {
-            bool flag = !this.gameCfg_isPluginEnabledScene;
-            if (!flag)
+            //bool flag = !this.gameCfg_isPluginEnabledScene;
+            //if (!flag)
             {
                 GUIStyle guistyle = new GUIStyle("box");
                 guistyle.fontSize = 11;
                 guistyle.alignment = TextAnchor.UpperLeft;
-                bool scriptFinished = this.scriplayContext.scriptFinished;
-                if (scriptFinished)
+                //bool scriptFinished = this.scriplayContext.scriptFinished;
+                //if (scriptFinished)
                 {
                     this.node_main = GUI.Window(21, this.node_main, new GUI.WindowFunction(this.WindowCallback_mainUI), ScriplayPlugin.cfg.PluginName + " Main UI", guistyle);
                 }
-                bool flag2 = !this.scriplayContext.scriptFinished;
-                if (flag2)
+                //bool flag2 = !this.scriplayContext.scriptFinished;
+                //if (flag2)
                 {
                     this.node_showArea = GUI.Window(22, this.node_showArea, new GUI.WindowFunction(this.WindowCallback_showArea), "", guistyle);
                 }
-                bool flag3 = this.en_showScripts && this.scriplayContext.scriptFinished;
                 //bool flag3 =  this.scriplayContext.scriptFinished;
+                //bool flag3 = this.en_showScripts && this.scriplayContext.scriptFinished;
+                bool flag3 = this.en_showScripts ;
                 if (flag3)
                 {
-                    //this.en_showScripts = true;
                     this.node_scripts = GUI.Window(23, this.node_scripts, new GUI.WindowFunction(this.WindowCallback_scriptsView), ScriplayPlugin.cfg.PluginName + "스크립트 목록", guistyle);
                 }
             }
@@ -473,23 +473,21 @@ namespace COM3D2.Scriplay.Plugin
             }
             foreach (string text4 in this.debug_toastQueue)
             {
-                bool flag16 = GUILayout.Button(text4, this.gsButtonSmall, new GUILayoutOption[0]);
-                if (flag16)
+                if (GUILayout.Button(text4, this.gsButtonSmall, new GUILayoutOption[0]))
                 {
                     ScriplayPlugin.toast(text4);
                 }
             }
             GUILayout.Label("스크립트 실행", this.gsLabelSmall, new GUILayoutOption[0]);
-            bool flag17 = !this.scriplayContext.scriptFinished;
-            if (flag17)
+
+            if (!this.scriplayContext.scriptFinished)
             {
                 GUILayout.Label("\u3000（스크립트 실행중）", this.gsLabelSmall, new GUILayoutOption[0]);
             }
             else
             {
                 this.debug_script = GUILayout.TextField(this.debug_script, new GUILayoutOption[0]);
-                bool flag18 = Event.current.keyCode == KeyCode.Return && this.debug_script != "";
-                if (flag18)
+                if (Event.current.keyCode == KeyCode.Return && this.debug_script != "")
                 {
                     this.scriplayContext = ScriplayContext.readScriptFile("스크립트 실행 테스트", this.debug_script.Split(new string[]
                     {
@@ -505,8 +503,7 @@ namespace COM3D2.Scriplay.Plugin
                 }
                 foreach (string text5 in this.debug_scriptQueue)
                 {
-                    bool flag20 = GUILayout.Button(text5, this.gsButtonSmall, new GUILayoutOption[0]);
-                    if (flag20)
+                    if (GUILayout.Button(text5, this.gsButtonSmall, new GUILayoutOption[0]))
                     {
                         this.scriplayContext = ScriplayContext.readScriptFile("스크립트 실행 테스트", text5.Split(new string[]
                         {
@@ -2602,7 +2599,7 @@ namespace COM3D2.Scriplay.Plugin
                                 if (flag10)
                                 {
                                     this.scriptFinished = true;
-                                    Util.info(string.Format("すべてのスクリプトを実行しました. 行数：{0},{1}", this.currentExecuteLine.ToString(), this.scriptName));
+                                    Util.info(string.Format("모든 스크립트를 실행했습니다. 행 수：{0},{1}", this.currentExecuteLine.ToString(), this.scriptName));
                                     break;
                                 }
                                 string text = this.scriptArray[this.currentExecuteLine];
@@ -2768,7 +2765,7 @@ namespace COM3D2.Scriplay.Plugin
                                                     bool flag34 = text == "";
                                                     if (!flag34)
                                                     {
-                                                        Util.info(string.Format("解釈できませんでした：{0}:{1}", this.currentExecuteLine.ToString(), text));
+                                                        Util.info(string.Format("해석 할 수 없습니다：{0}:{1}", this.currentExecuteLine.ToString(), text));
                                                     }
                                                 }
                                             }
@@ -2815,14 +2812,14 @@ namespace COM3D2.Scriplay.Plugin
                             }
                             else
                             {
-                                Util.info(string.Format("line{0} : モード指定が不適切です:{1}", this.currentExecuteLine.ToString(), text));
+                                Util.info(string.Format("line{0} : 모드 지정이 잘못되었습니다:{1}", this.currentExecuteLine.ToString(), text));
                             }
                         }
                     }
                 }
                 else
                 {
-                    Util.info(string.Format("line{0} : モードが指定されていません", this.currentExecuteLine.ToString()));
+                    Util.info(string.Format("line{0} : 모드가 지정되어 있지 않습니다", this.currentExecuteLine.ToString()));
                 }
                 maid.change_eyeToCam(state);
             }
@@ -2864,14 +2861,14 @@ namespace COM3D2.Scriplay.Plugin
                                 }
                                 else
                                 {
-                                    Util.info(string.Format("line{0} : モード指定が不適切です:{1}", this.currentExecuteLine.ToString(), text));
+                                    Util.info(string.Format("line{0} : 모드 지정이 잘못되었습니다:{1}", this.currentExecuteLine.ToString(), text));
                                 }
                             }
                         }
                     }
                     else
                     {
-                        Util.info(string.Format("line{0} : モードが指定されていません", this.currentExecuteLine.ToString()));
+                        Util.info(string.Format("line{0} : 모드가 지정되어 있지 않습니다", this.currentExecuteLine.ToString()));
                     }
                     bool flag5 = paramDict.ContainsKey("fade");
                     if (flag5)
