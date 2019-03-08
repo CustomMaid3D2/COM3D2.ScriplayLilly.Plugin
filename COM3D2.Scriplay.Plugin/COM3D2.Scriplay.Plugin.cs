@@ -23,7 +23,7 @@ namespace COM3D2.Scriplay.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("0.1.1.3")]
+    [PluginVersion("0.1.1.4")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
