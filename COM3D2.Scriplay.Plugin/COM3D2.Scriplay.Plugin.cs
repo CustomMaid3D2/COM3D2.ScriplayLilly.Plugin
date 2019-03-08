@@ -1,2132 +1,3780 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.IO;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
 using UnityEngine;
-using UnityInjector.Attributes;
-using PluginExt;
 using System.Collections;
 using System.Data;
 using System.Text;
-using static COM3D2.Scriplay.Plugin.ScriplayPlugin;
+using PluginExt;
 using UnityEngine.UI;
-
-
+using UnityInjector.Attributes;
 
 namespace COM3D2.Scriplay.Plugin
 {
 
-    [PluginFilter("COM3D2x64"), PluginFilter("COM3D2x86"), PluginFilter("COM3D2VRx64"),
-    PluginFilter("COM3D2OHx64"), PluginFilter("COM3D2OHx86"), PluginFilter("COM3D2OHVRx64"),
-    PluginName("Scriplay"), PluginVersion("0.1.0.0")]
-
-
+    // Token: 0x02000002 RID: 2
+    [PluginFilter("COM3D2x64")]
+    [PluginFilter("COM3D2x86")]
+    [PluginFilter("COM3D2VRx64")]
+    [PluginFilter("COM3D2OHx64")]
+    [PluginFilter("COM3D2OHx86")]
+    [PluginFilter("COM3D2OHVRx64")]
+    [PluginName("Scriplay edit by lilly")]
+    [PluginVersion("0.1.1.1")]
     public class ScriplayPlugin : ExPluginBase
     {
-        //　設定クラス（Iniファイルで読み書きしたい変数はここに格納する）
-        public class ScriplayConfig
-        {
-            internal bool debugMode = true;
-
-            internal readonly float faceAnimeFadeTime = 1f;    //フェイスアニメフェード時間　1sec
-            internal readonly string csvPath = @"Sybaris\UnityInjector\Config\Scriplay\csv\";
-            internal readonly string scriptsPath = @"Sybaris\UnityInjector\Config\Scriplay\scripts\";
-            internal string onceVoicePrefix = "oncevoice_";
-            internal string loopVoicePrefix = "loopvoice_";
-            internal string motionListPrefix = "motion_";
-            internal string faceListPrefix = "face_";
-            internal string PluginName = "Scriplay";
-            internal string debugPrintColor = "red";
-            internal bool enModMotionLoad = false;  //true;
-
-            internal float sio_baseTime = 1f;           //潮　ベース時間
-            internal float nyo_baseTime = 3f;           //尿　ベース時間
-
-
-            internal int studioModeSceneLevel = 26;     //スタジオモードのシーンレベル
-
-        }
-
-        public static ScriplayConfig cfg = null;
-        public static List<string> zeccyou_fn_list = new List<string>();  //絶頂モーションファイル名のリスト、絶頂モーション検索用
-        public static List<string> motionNameAllList = new List<string>();        //ゲームデータ内の全モーションデータ
-
-
-        /// <summary>
-        /// 全モーション一覧
-        /// </summary>
-        public static HashSet<string> motionCategorySet = new HashSet<string>();
-
-        //メイド情報
-        private Transform[] maidHead = new Transform[20];
-
-        /// <summary>
-        /// メイドリスト
-        /// </summary>
-        public static List<IMaid> maidList = new List<IMaid>();
-        public static List<IMan> manList = new List<IMan>();
-        private bool gameCfg_isChuBLipEnabled = false;
-        private bool gameCfg_isVREnabled = false;
-        private bool gameCfg_isPluginEnabledScene = false;
-
-        /// <summary>
-        /// モーションのベース名　算出のための定義リスト
-        /// sufix　を除去していくことでベース名を求める
-        /// </summary>
-        private static Dictionary<string, string> motionBaseRegexDefDic = new Dictionary<string, string>()
-            {
-                {@"_[123]_.*",          "_" },
-                {@"_[123]\w\d\d.*",     "_" },
-                {@"\.anm",              "" },
-                {@"_asiname_.*",          "_"},
-                //{@"_aibu_.*",          "_"},
-                {@"_cli[\d]?_.*",       "_"},
-                {@"_daki_.*",            "_"},
-                {@"_fera_.*",             "_"},
-                {@"_gr_.*",            "_"},
-                {@"_housi_.*",            "_"},
-                {@"_hibu_.*",            "_"},
-                {@"_hibuhiraki_.*",            "_"},
-                {@"_ir_.*",               "_"},
-                {@"_kakae_.*",             "_"},
-                {@"_kuti_.*",             "_"},
-                {@"_kiss_.*",             "_"},
-                {@"_momi_.*",             "_" },
-                {@"_onani_.*",            "_"},
-                {@"_oku_.*",            "_"},
-                {@"_peace_.*",            "_"},
-                {@"_ran4p_.*",            "_"},
-                {@"_ryoutenaburi_.*",            "_"},
-                {@"_siri_.*",           "_" },
-                {@"_sissin_.*",          "_"},
-                {@"_shasei_.*",           "_" },
-                {@"_shaseigo_.*",         "_" },
-                {@"_sixnine_.*",          "_"},
-                {@"_surituke_.*",         "_"},
-                {@"_siriname_.*",         "_"},
-                {@"_taiki_.*",            "_" },
-                {@"_tikubi_.*",          "_"},
-                {@"_tekoki_.*",          "_"},
-                {@"_tikubiname_.*",       "_"},
-                {@"_tati_.*",       "_"},
-                {@"_ubi\d?_.*",       "_"},
-                {@"_vibe_.*",        "_" },
-                {@"_zeccyougo_.*",        "_" },
-                {@"_zeccyou_.*",          "_" },
-                {@"_zikkyou_.*",       "_"},
-            };
-        //正規表現をコンパイルするのにコストがかかるため、あらかじめコンパイルしたものを使用する。https://docs.unity3d.com/ja/current/Manual/BestPracticeUnderstandingPerformanceInUnity5.html
-        private static Dictionary<Regex, string> motionBaseRegexDic = new Dictionary<Regex, string>();
-
-
-
-        /// <summary>
-        /// メイドリスト・男リスト　初期化、メイドステータスも初期化
-        /// </summary>
+        // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
         private void initMaidList()
         {
             Util.info("メイド一覧読み込み開始");
-            maidList.Clear();
-            manList.Clear();
-            CharacterMgr cm = GameMain.Instance.CharacterMgr;
-            for (int i = 0; i < cm.GetMaidCount(); i++)
+            ScriplayPlugin.maidList.Clear();
+            ScriplayPlugin.manList.Clear();
+            CharacterMgr characterMgr = GameMain.Instance.CharacterMgr;
+            for (int i = 0; i < characterMgr.GetMaidCount(); i++)
             {
-                Maid m = cm.GetMaid(i);
-                if (!isMaidAvailable(m)) continue;
-
-                maidList.Add(new IMaid(i, m));
-                Util.info(string.Format("メイド「{0}」を検出しました", m.status.fullNameJpStyle));
+                Maid maid = characterMgr.GetMaid(i);
+                bool flag = !this.isMaidAvailable(maid);
+                if (!flag)
+                {
+                    ScriplayPlugin.maidList.Add(new ScriplayPlugin.IMaid(i, maid));
+                    Util.info(string.Format("メイド「{0}」を検出しました", maid.status.fullNameJpStyle));
+                }
             }
-            //男は最大6人、cm.GetManCount()は機能してない？ぽいので決め打ちでループ回す。
-            for (int i = 0; i < 6; i++)
+            for (int j = 0; j < 6; j++)
             {
-                Maid m = cm.GetMan(i);  //無効な男Noならnullが返ってくる、nullチェックする
-                if (!isMaidAvailable(m)) continue;
-
-                manList.Add(new IMan(m));
-                Util.info(string.Format("ご主人様「{0}」を検出しました", m.status.fullNameJpStyle));
+                Maid man = characterMgr.GetMan(j);
+                bool flag2 = !this.isMaidAvailable(man);
+                if (!flag2)
+                {
+                    ScriplayPlugin.manList.Add(new ScriplayPlugin.IMan(man));
+                    Util.info(string.Format("ご主人様「{0}」を検出しました", man.status.fullNameJpStyle));
+                }
             }
             GameMain.Instance.SoundMgr.StopSe();
         }
+
+        // Token: 0x06000002 RID: 2 RVA: 0x0000215C File Offset: 0x0000035C
         private bool isMaidAvailable(Maid m)
         {
             return m != null && m.Visible && m.AudioMan != null;
         }
 
-
+        // Token: 0x06000003 RID: 3 RVA: 0x00002190 File Offset: 0x00000390
         public void Awake()
         {
-            GameObject.DontDestroyOnLoad(this);
-
-            string gameDataPath = UnityEngine.Application.dataPath;
-
-            loadSetting();
-
-            // ChuBLip判別
-            gameCfg_isChuBLipEnabled = gameDataPath.Contains("COM3D2OHx64") || gameDataPath.Contains("COM3D2OHx86") || gameDataPath.Contains("COM3D2OHVRx64");
-            // VR判別
-            gameCfg_isVREnabled = gameDataPath.Contains("COM3D2OHVRx64") || gameDataPath.Contains("COM3D2VRx64") || Environment.CommandLine.ToLower().Contains("/vr");
-
-            //MotionBase変換用正規表現　事前コンパイル
-            foreach (KeyValuePair<string, string> kvp in motionBaseRegexDefDic)
+            UnityEngine.Object.DontDestroyOnLoad(this);
+            string dataPath = Application.dataPath;
+            this.loadSetting();
+            this.gameCfg_isChuBLipEnabled = (dataPath.Contains("COM3D2OHx64") || dataPath.Contains("COM3D2OHx86") || dataPath.Contains("COM3D2OHVRx64"));
+            this.gameCfg_isVREnabled = (dataPath.Contains("COM3D2OHVRx64") || dataPath.Contains("COM3D2VRx64") || Environment.CommandLine.ToLower().Contains("/vr"));
+            foreach (KeyValuePair<string, string> keyValuePair in ScriplayPlugin.motionBaseRegexDefDic)
             {
-                Regex regex1 = new Regex(kvp.Key);
-                motionBaseRegexDic.Add(regex1, kvp.Value);
+                Regex key = new Regex(keyValuePair.Key);
+                ScriplayPlugin.motionBaseRegexDic.Add(key, keyValuePair.Value);
             }
-
-            //UI表示　初期化
-            initGuiStyle();
+            this.initGuiStyle();
         }
 
-        /// <summary>
-        /// ファイル読み込み　コンフィグ、モーション、ボイス
-        /// </summary>
+        // Token: 0x06000004 RID: 4 RVA: 0x00002280 File Offset: 0x00000480
         private void loadSetting()
         {
-            cfg = ReadConfig<ScriplayConfig>("ScriplayConfig");
-            load_ConfigCsv();
-            load_motionGameData(cfg.enModMotionLoad);
+            ScriplayPlugin.cfg = base.ReadConfig<ScriplayPlugin.ScriplayConfig>("ScriplayConfig");
+            this.load_ConfigCsv();
+            this.load_motionGameData(ScriplayPlugin.cfg.enModMotionLoad);
         }
 
+        // Token: 0x06000005 RID: 5 RVA: 0x000022AC File Offset: 0x000004AC
         private void load_ConfigCsv()
         {
             Util.info("CSVファイル読み込み");
-            OnceVoiceTable.init();
-            LoopVoiceTable.init();
-            MotionTable.init();
-            FaceTable.init();
-            motionCategorySet.Clear();
-            List<string> filelist = Util.getFileFullpathList(cfg.csvPath, "csv");
-            string filenameList = "\r\n";
-            foreach (string fullpath in filelist)
+            ScriplayPlugin.OnceVoiceTable.init();
+            ScriplayPlugin.LoopVoiceTable.init();
+            ScriplayPlugin.MotionTable.init();
+            ScriplayPlugin.FaceTable.init();
+            ScriplayPlugin.motionCategorySet.Clear();
+            List<string> fileFullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.csvPath, "csv");
+            string text = "\r\n";
+            foreach (string text2 in fileFullpathList)
             {
-                string basename = Path.GetFileNameWithoutExtension(fullpath);
-                filenameList += basename + "\r\\n";
-                Util.info(string.Format("CSV:{0}", basename));
-                if (basename.Contains(cfg.motionListPrefix))
+                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(text2);
+                text = text + fileNameWithoutExtension + "\r\\n";
+                Util.info(string.Format("CSV:{0}", fileNameWithoutExtension));
+                bool flag = fileNameWithoutExtension.Contains(ScriplayPlugin.cfg.motionListPrefix);
+                if (flag)
                 {
-                    MotionTable.parse(Util.ReadCsvFile(fullpath, false), basename);
+                    ScriplayPlugin.MotionTable.parse(Util.ReadCsvFile(text2, false), fileNameWithoutExtension);
                 }
-                else if (basename.Contains(cfg.onceVoicePrefix))
+                else
                 {
-                    OnceVoiceTable.parse(Util.ReadCsvFile(fullpath, false), basename);
-                }
-                else if (basename.Contains(cfg.loopVoicePrefix))
-                {
-                    LoopVoiceTable.parse(Util.ReadCsvFile(fullpath, false), basename);
-                }
-                else if (basename.Contains(cfg.faceListPrefix))
-                {
-                    FaceTable.parse(Util.ReadCsvFile(fullpath, false), basename);
+                    bool flag2 = fileNameWithoutExtension.Contains(ScriplayPlugin.cfg.onceVoicePrefix);
+                    if (flag2)
+                    {
+                        ScriplayPlugin.OnceVoiceTable.parse(Util.ReadCsvFile(text2, false), fileNameWithoutExtension);
+                    }
+                    else
+                    {
+                        bool flag3 = fileNameWithoutExtension.Contains(ScriplayPlugin.cfg.loopVoicePrefix);
+                        if (flag3)
+                        {
+                            ScriplayPlugin.LoopVoiceTable.parse(Util.ReadCsvFile(text2, false), fileNameWithoutExtension);
+                        }
+                        else
+                        {
+                            bool flag4 = fileNameWithoutExtension.Contains(ScriplayPlugin.cfg.faceListPrefix);
+                            if (flag4)
+                            {
+                                ScriplayPlugin.FaceTable.parse(Util.ReadCsvFile(text2, false), fileNameWithoutExtension);
+                            }
+                        }
+                    }
                 }
             }
-            if (filenameList == "\r\n") filenameList = "（CSVファイルが見つかりませんでした）";
-            Util.info(filenameList);
-
-            foreach (string s in MotionTable.getCategoryList())
+            bool flag5 = text == "\r\n";
+            if (flag5)
             {
-                motionCategorySet.Add(s);
+                text = "（CSVファイルが見つかりませんでした）";
+            }
+            Util.info(text);
+            foreach (string item in ScriplayPlugin.MotionTable.getCategoryList())
+            {
+                ScriplayPlugin.motionCategorySet.Add(item);
             }
         }
 
-        /// <summary>
-        /// Unityが把握しているモーションデータを取得して一覧作成
-        /// </summary>
-        /// <param name="allLoad">バニラのモーションデータのみ読み込み（Modのモーションは含まず）</param>
+        // Token: 0x06000006 RID: 6 RVA: 0x00002498 File Offset: 0x00000698
         private void load_motionGameData(bool allLoad = true)
         {
-            // COM3D2のモーションファイル全列挙
             Util.info("モーションファイル読み込み開始");
-            motionNameAllList.Clear();
-
-            if (!allLoad)
+            ScriplayPlugin.motionNameAllList.Clear();
+            bool flag = !allLoad;
+            if (flag)
             {
-                ///*
-                // FileSystemArchiveのGetFileは全てのファイルを検索対象とするため時間がかかる
-                // 全体を対象とするよりは、「motion」「motion2」配下だけを対象としたほうが早いため、下記のように処理
-                //参考：https://github.com/Neerhom/COM3D2.ModLoader/blob/master/COM3D2.ModMenuAccel.patcher/COM3D2.ModMenuAccel.Hook/COM3D2.ModMenuAccel.Hook/FastStart.cs
-                //*/
-                string[] motionDirList = { "motion", "motion2", "motion_3d21reserve_2", "motion_cos021_2", "motion_denkigai2017w_2" };
-                ArrayList Files = new ArrayList();
-                foreach (string s in motionDirList)
+                string[] array = new string[]
                 {
-                    Files.AddRange(GameUty.FileSystem.GetList(s, AFileSystemBase.ListType.AllFile));
+                    "motion",
+                    "motion2",
+                    "motion_3d21reserve_2",
+                    "motion_cos021_2",
+                    "motion_denkigai2017w_2"
+                };
+                ArrayList arrayList = new ArrayList();
+                foreach (string f_str_path in array)
+                {
+                    arrayList.AddRange(GameUty.FileSystem.GetList(f_str_path, AFileSystemBase.ListType.AllFile));
                 }
-                foreach (string file in Files)
+                foreach (object obj in arrayList)
                 {
-                    if (Path.GetExtension(file) == ".anm") motionNameAllList.Add(Path.GetFileNameWithoutExtension(file));
+                    string path = (string)obj;
+                    bool flag2 = Path.GetExtension(path) == ".anm";
+                    if (flag2)
+                    {
+                        ScriplayPlugin.motionNameAllList.Add(Path.GetFileNameWithoutExtension(path));
+                    }
                 }
             }
             else
             {
-                foreach (string file in GameUty.FileSystem.GetFileListAtExtension(".anm"))      //数秒かかる
+                foreach (string path2 in GameUty.FileSystem.GetFileListAtExtension(".anm"))
                 {
-                    motionNameAllList.Add(Path.GetFileNameWithoutExtension(file));
+                    ScriplayPlugin.motionNameAllList.Add(Path.GetFileNameWithoutExtension(path2));
                 }
             }
-            //ファイル名でソート
-            motionNameAllList.Sort();
-            string added = "\r\n";
-            foreach (string s in motionNameAllList)
+            ScriplayPlugin.motionNameAllList.Sort();
+            string str = "\r\n";
+            foreach (string str2 in ScriplayPlugin.motionNameAllList)
             {
-                added += s + "\r\n";
+                str = str + str2 + "\r\n";
             }
-            //Util.debug(added);
             Util.info("モーションファイル読み込み終了");
-
-            //絶頂モーションファイル名リスト　作成
-            foreach (string filename in motionNameAllList)
+            foreach (string text in ScriplayPlugin.motionNameAllList)
             {
-                if (filename.Contains("zeccyou_f_once")) zeccyou_fn_list.Add(filename);
+                bool flag3 = text.Contains("zeccyou_f_once");
+                if (flag3)
+                {
+                    ScriplayPlugin.zeccyou_fn_list.Add(text);
+                }
             }
-            zeccyou_fn_list.Sort();
+            ScriplayPlugin.zeccyou_fn_list.Sort();
         }
 
+        // Token: 0x06000007 RID: 7 RVA: 0x000026C0 File Offset: 0x000008C0
         public void Start()
         {
         }
 
+        // Token: 0x06000008 RID: 8 RVA: 0x000026C0 File Offset: 0x000008C0
         public void OnDestroy()
         {
         }
 
-
-
-        void OnLevelWasLoaded(int level)
+        // Token: 0x06000009 RID: 9 RVA: 0x000026C4 File Offset: 0x000008C4
+        private void OnLevelWasLoaded(int level)
         {
-            // スタジオモードならプラグイン有効
-            if (level == cfg.studioModeSceneLevel)
-            //if (isYotogiScene(level))
+            bool flag = level == ScriplayPlugin.cfg.studioModeSceneLevel;
+            if (flag)
             {
-                gameCfg_isPluginEnabledScene = true;
+                this.gameCfg_isPluginEnabledScene = true;
+                this.initMaidList();
             }
             else
             {
-                gameCfg_isPluginEnabledScene = false;
-                return;
+                this.gameCfg_isPluginEnabledScene = false;
             }
-
-            //各変数の初期化 TODO
-
-            initMaidList();
-
-
         }
 
+        // Token: 0x0600000A RID: 10 RVA: 0x00002700 File Offset: 0x00000900
         private bool isYotogiScene(int sceneLevel)
         {
             return GameMain.Instance.CharacterMgr.GetMaidCount() != 0;
-            //int yotogiManagerCount = FindObjectsOfType<YotogiManager>().Length;
-            //return yotogiManagerCount > 0;
         }
 
-
-        private static readonly float UIwidth = 300;
-        private static readonly float UIheight = 400;
-        private static readonly float UIposX_rightMargin = 10;
-        private static readonly float UIposY_bottomMargin = 120;
-        Rect node_main = new Rect(UnityEngine.Screen.width - UIposX_rightMargin - UIwidth, UnityEngine.Screen.height - UIposY_bottomMargin - UIheight, UIwidth, UIheight);
-        Rect node_scripts = new Rect(UnityEngine.Screen.width - UIposX_rightMargin - UIwidth, UnityEngine.Screen.height - (UIheight + UIposY_bottomMargin) - UIheight, UIwidth, UIheight);
-
-        private static readonly float UIwidth_showArea = 800;
-        private static readonly float UIheight_showArea = 150;
-        private static readonly float UIposX_rightMargin_showArea = 10;
-        private static readonly float UIposY_bottomMargin_showArea = 10;
-        Rect node_showArea = new Rect(UnityEngine.Screen.width - UIposX_rightMargin_showArea - UIwidth_showArea,
-            UnityEngine.Screen.height - UIposY_bottomMargin_showArea - UIheight_showArea, UIwidth_showArea, UIheight_showArea);
-
-        private Vector2 scrollPosition = new Vector2();
-        private Queue<string> debug_strQueue = new Queue<string>();
-        private Dictionary<string, string> debug_ovtQueryMap = new Dictionary<string, string>()
+        // Token: 0x0600000B RID: 11 RVA: 0x00002724 File Offset: 0x00000924
+        private void OnGUI()
         {
-            {"Personal","" },
-            {"Category","" },
-
-        };
-        private string debug_toast = "";
-        private Queue<string> debug_toastQueue = new Queue<string>();
-        private string debug_playVoice = "";
-        private Queue<string> debug_playVoiceQueue = new Queue<string>();
-        private string debug_playMotion = "";
-        private Queue<string> debug_playMotionQueue = new Queue<string>();
-        private string debug_face = "";
-        private Queue<string> debug_faceQueue = new Queue<string>();
-        private string debug_script = "";
-        private Queue<string> debug_scriptQueue = new Queue<string>();
-
-        void OnGUI()
-        {
-            if (!gameCfg_isPluginEnabledScene) return;
-
-            GUIStyle guiTitleStyle = new GUIStyle("box");
-            guiTitleStyle.fontSize = 11;
-            guiTitleStyle.alignment = TextAnchor.UpperLeft;
-
-            if (scriplayContext.scriptFinished)
+            bool flag = !this.gameCfg_isPluginEnabledScene;
+            if (!flag)
             {
-                node_main = GUI.Window(21, node_main, WindowCallback_mainUI, cfg.PluginName + " Main UI", guiTitleStyle);
-            }
-            //if (scriplayContext.selection_selectionList.Count != 0)
-            if (!scriplayContext.scriptFinished)
-            {
-                node_showArea = GUI.Window(22, node_showArea, WindowCallback_showArea, "", guiTitleStyle);
-            }
-            if (en_showScripts && scriplayContext.scriptFinished) node_scripts = GUI.Window(23, node_scripts, WindowCallback_scriptsView, cfg.PluginName + "スクリプト一覧", guiTitleStyle);
-        }
-
-        private ScriplayContext scriplayContext = ScriplayContext.None;
-        private bool en_showScripts = false;
-        private Vector2 scriptsList_scrollPosition = new Vector2();
-        private List<string> scripts_fullpathList = new List<string>();
-        private static MonoBehaviour instance;
-        private Vector2 showArea_scrollPosition = new Vector2();
-
-        ScriplayPlugin()
-        {
-            instance = this;
-        }
-
-        void WindowCallback_scriptsView(int id)
-        {
-            GUILayout.Space(20);
-            scriptsList_scrollPosition = GUILayout.BeginScrollView(scriptsList_scrollPosition);
-
-            foreach (string fullpath in scripts_fullpathList)
-            {
-                string basename = Path.GetFileNameWithoutExtension(fullpath);
-                if (GUILayout.Button(basename, gsButton))
+                GUIStyle guistyle = new GUIStyle("box");
+                guistyle.fontSize = 11;
+                guistyle.alignment = TextAnchor.UpperLeft;
+                bool scriptFinished = this.scriplayContext.scriptFinished;
+                if (scriptFinished)
                 {
-                    scriplayContext = ScriplayContext.readScriptFile(fullpath);
+                    this.node_main = GUI.Window(21, this.node_main, new GUI.WindowFunction(this.WindowCallback_mainUI), ScriplayPlugin.cfg.PluginName + " Main UI", guistyle);
+                }
+                bool flag2 = !this.scriplayContext.scriptFinished;
+                if (flag2)
+                {
+                    this.node_showArea = GUI.Window(22, this.node_showArea, new GUI.WindowFunction(this.WindowCallback_showArea), "", guistyle);
+                }
+                bool flag3 = this.en_showScripts && this.scriplayContext.scriptFinished;
+                if (flag3)
+                {
+                    this.node_scripts = GUI.Window(23, this.node_scripts, new GUI.WindowFunction(this.WindowCallback_scriptsView), ScriplayPlugin.cfg.PluginName + "スクリプト一覧", guistyle);
+                }
+            }
+        }
+
+        // Token: 0x0600000C RID: 12 RVA: 0x00002834 File Offset: 0x00000A34
+        private ScriplayPlugin()
+        {
+            ScriplayPlugin.instance = this;
+        }
+
+        // Token: 0x0600000D RID: 13 RVA: 0x00002A74 File Offset: 0x00000C74
+        private void WindowCallback_scriptsView(int id)
+        {
+            GUILayout.Space(20f);
+            this.scriptsList_scrollPosition = GUILayout.BeginScrollView(this.scriptsList_scrollPosition, new GUILayoutOption[0]);
+            foreach (string text in this.scripts_fullpathList)
+            {
+                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(text);
+                bool flag = GUILayout.Button(fileNameWithoutExtension, this.gsButton, new GUILayoutOption[0]);
+                if (flag)
+                {
+                    this.scriplayContext = ScriplayContext.readScriptFile(text);
                 }
             }
             GUILayout.EndScrollView();
             GUI.DragWindow();
         }
 
-        void WindowCallback_showArea(int id)
+        // Token: 0x0600000E RID: 14 RVA: 0x00002B20 File Offset: 0x00000D20
+        private void WindowCallback_showArea(int id)
         {
-            GUIStyle gsButton_stopScript = new GUIStyle("button");
-            gsButton_stopScript.fontSize = 10;
-            gsButton_stopScript.alignment = TextAnchor.MiddleCenter;
-            gsButton_stopScript.fixedWidth = 100;
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Stop Script", gsButton_stopScript))
+            GUIStyle guistyle = new GUIStyle("button");
+            guistyle.fontSize = 10;
+            guistyle.alignment = TextAnchor.MiddleCenter;
+            guistyle.fixedWidth = 100f;
+            GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+            bool flag = GUILayout.Button("Stop Script", guistyle, new GUILayoutOption[0]);
+            if (flag)
             {
-                scriplayContext.scriptFinished = true;
+                this.scriplayContext.scriptFinished = true;
             }
             GUILayout.EndHorizontal();
-            GUILayout.Space(10);
-
-            showArea_scrollPosition = GUILayout.BeginScrollView(showArea_scrollPosition);
-            if (!scriplayContext.showText.Equals(""))
+            GUILayout.Space(10f);
+            this.showArea_scrollPosition = GUILayout.BeginScrollView(this.showArea_scrollPosition, new GUILayoutOption[0]);
+            bool flag2 = !this.scriplayContext.showText.Equals("");
+            if (flag2)
             {
-                GUILayout.Label(scriplayContext.showText, gsLabel);
+                GUILayout.Label(this.scriplayContext.showText, this.gsLabel, new GUILayoutOption[0]);
             }
-            foreach (ScriplayContext.Selection s in scriplayContext.selection_selectionList)
+            foreach (ScriplayContext.Selection selection in this.scriplayContext.selection_selectionList)
             {
-                if (GUILayout.Button(s.viewStr, gsButton))
+                bool flag3 = GUILayout.Button(selection.viewStr, this.gsButton, new GUILayoutOption[0]);
+                if (flag3)
                 {
-                    scriplayContext.selection_selectedItem = s;
+                    this.scriplayContext.selection_selectedItem = selection;
                 }
             }
             GUILayout.EndScrollView();
             GUI.DragWindow();
         }
 
-        GUIStyle gsLabelTitle = new GUIStyle("label");
-        GUIStyle gsLabel = new GUIStyle("label");
-        GUIStyle gsLabelSmall = new GUIStyle("label");
-        GUIStyle gsButton = new GUIStyle("button");
-        GUIStyle gsButtonSmall = new GUIStyle("button");
-
+        // Token: 0x0600000F RID: 15 RVA: 0x00002C70 File Offset: 0x00000E70
         private void initGuiStyle()
         {
-            gsLabelTitle.fontSize = 14;
-            gsLabelTitle.alignment = TextAnchor.MiddleCenter;
-
-            gsLabel.fontSize = 12;
-            gsLabel.alignment = TextAnchor.MiddleLeft;
-
-            gsLabelSmall.fontSize = 10;
-            gsLabelSmall.alignment = TextAnchor.MiddleLeft;
-
-            gsButton.fontSize = 12;
-            gsButton.alignment = TextAnchor.MiddleCenter;
-
-            gsButtonSmall.fontSize = 10;
-            gsButtonSmall.alignment = TextAnchor.MiddleCenter;
+            this.gsLabelTitle.fontSize = 14;
+            this.gsLabelTitle.alignment = TextAnchor.MiddleCenter;
+            this.gsLabel.fontSize = 12;
+            this.gsLabel.alignment = TextAnchor.MiddleLeft;
+            this.gsLabelSmall.fontSize = 10;
+            this.gsLabelSmall.alignment = TextAnchor.MiddleLeft;
+            this.gsButton.fontSize = 12;
+            this.gsButton.alignment = TextAnchor.MiddleCenter;
+            this.gsButtonSmall.fontSize = 10;
+            this.gsButtonSmall.alignment = TextAnchor.MiddleCenter;
         }
-        void WindowCallback_mainUI(int id)
-        {
-            //メインアイコン------------------------------------------------
 
-            GUILayout.Space(20);    //UIタイトルとかぶらないように
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Reload Maid", gsButtonSmall))
+        // Token: 0x06000010 RID: 16 RVA: 0x00002D08 File Offset: 0x00000F08
+        private void WindowCallback_mainUI(int id)
+        {
+            GUILayout.Space(20f);
+            GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+            bool flag = GUILayout.Button("Reload Maid", this.gsButtonSmall, new GUILayoutOption[0]);
+            if (flag)
             {
-                initMaidList();
+                this.initMaidList();
             }
-            if (GUILayout.Button("Reload CSV", gsButtonSmall))
+            bool flag2 = GUILayout.Button("Reload CSV", this.gsButtonSmall, new GUILayoutOption[0]);
+            if (flag2)
             {
-                load_ConfigCsv();
+                this.load_ConfigCsv();
             }
-            if (GUILayout.Button("Show Scripts", gsButtonSmall))
+            bool flag3 = GUILayout.Button("Show Scripts", this.gsButtonSmall, new GUILayoutOption[0]);
+            if (flag3)
             {
-                en_showScripts = !en_showScripts;
-                if (en_showScripts)
+                this.en_showScripts = !this.en_showScripts;
+                bool flag4 = this.en_showScripts;
+                if (flag4)
                 {
-                    scripts_fullpathList = Util.getFileFullpathList(cfg.scriptsPath, suffix: "md");
-                    Util.info(string.Format("以下のスクリプトが見つかりました"));
-                    foreach (string s in scripts_fullpathList)
+                    this.scripts_fullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.scriptsPath, "md");
+                    Util.info(string.Format("以下のスクリプトが見つかりました", new object[0]));
+                    foreach (string message in this.scripts_fullpathList)
                     {
-                        Util.info(s);
+                        Util.info(message);
                     }
                 }
             }
             GUILayout.EndHorizontal();
-            //TODO Configファイル新規作成できてない
-            /*
-                        GUILayout.BeginHorizontal();
-                        if (GUILayout.Button("Reload Config.ini", gsButtonSmall))
-                        {
-                            cfg = ReadConfig<ScriplayConfig>("ScriplayConfig");
-                        }
-                        if (GUILayout.Button("Save Config.ini", gsButtonSmall))
-                        {
-                            SaveConfig<ScriplayConfig>(cfg,"ScriplayConfig");
-                        }
-                        GUILayout.EndHorizontal();
-            */
-            GUILayout.Space(10);
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
-
-            //メインコンテンツ------------------------------------------------
-
-
-            GUILayout.Label("スクリプト", gsLabel);
-            GUILayout.Label(string.Format("スクリプト名：{0}", scriplayContext.scriptName), gsLabelSmall);
-            GUILayout.Label(string.Format("状態：{0}", scriplayContext.scriptFinished ? "スクリプト終了" : "スクリプト実行中"), gsLabelSmall);
-            GUILayout.Label(string.Format("現在実行行：{0}", scriplayContext.currentExecuteLine), gsLabelSmall);
-            GUILayout.Space(10);
-
-
-
-
-            GUILayout.Label("ボイス再生", gsLabelSmall);
-            debug_playVoice = GUILayout.TextField(debug_playVoice);
-            if (Event.current.keyCode == KeyCode.Return && debug_playVoice != "")
+            GUILayout.Space(10f);
+            this.scrollPosition = GUILayout.BeginScrollView(this.scrollPosition, new GUILayoutOption[0]);
+            GUILayout.Label("스크립트", this.gsLabel, new GUILayoutOption[0]);
+            GUILayout.Label(string.Format("스크립트 이름：{0}", this.scriplayContext.scriptName), this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label(string.Format("상태：{0}", this.scriplayContext.scriptFinished ? "스크립트 종료" : "스크립트 실행중"), this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label(string.Format("현재 실행 행：{0}", this.scriplayContext.currentExecuteLine), this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Space(10f);
+            GUILayout.Label("음성 재생", this.gsLabelSmall, new GUILayoutOption[0]);
+            this.debug_playVoice = GUILayout.TextField(this.debug_playVoice, new GUILayoutOption[0]);
+            bool flag5 = Event.current.keyCode == KeyCode.Return && this.debug_playVoice != "";
+            if (flag5)
             {
-                maidList[0].maid.AudioMan.LoadPlay(debug_playVoice, 0f, false, false);
-                debug_playVoiceQueue.Enqueue(debug_playVoice);
-                if (debug_playVoiceQueue.Count > 3) debug_playVoiceQueue.Dequeue();
-                debug_playVoice = "";
-            }
-            foreach (string s in debug_playVoiceQueue)
-            {
-                if (GUILayout.Button(s, gsButtonSmall))
+                ScriplayPlugin.maidList[0].maid.AudioMan.LoadPlay(this.debug_playVoice, 0f, false, false);
+                this.debug_playVoiceQueue.Enqueue(this.debug_playVoice);
+                bool flag6 = this.debug_playVoiceQueue.Count > 3;
+                if (flag6)
                 {
-                    maidList[0].maid.AudioMan.LoadPlay(s, 0f, false, false);
+                    this.debug_playVoiceQueue.Dequeue();
+                }
+                this.debug_playVoice = "";
+            }
+            foreach (string text in this.debug_playVoiceQueue)
+            {
+                bool flag7 = GUILayout.Button(text, this.gsButtonSmall, new GUILayoutOption[0]);
+                if (flag7)
+                {
+                    ScriplayPlugin.maidList[0].maid.AudioMan.LoadPlay(text, 0f, false, false);
                 }
             }
-
-            GUILayout.Label("モーション再生", gsLabelSmall);
-            debug_playMotion = GUILayout.TextField(debug_playMotion);
-            if (Event.current.keyCode == KeyCode.Return && debug_playMotion != "")
+            GUILayout.Label("モーション再生", this.gsLabelSmall, new GUILayoutOption[0]);
+            this.debug_playMotion = GUILayout.TextField(this.debug_playMotion, new GUILayoutOption[0]);
+            bool flag8 = Event.current.keyCode == KeyCode.Return && this.debug_playMotion != "";
+            if (flag8)
             {
-                Util.animate(maidList[0].maid, debug_playMotion, true);
-                debug_playMotionQueue.Enqueue(debug_playMotion);
-                if (debug_playMotionQueue.Count > 3) debug_playMotionQueue.Dequeue();
-                debug_playMotion = "";
-            }
-            foreach (string s in debug_playMotionQueue)
-            {
-                if (GUILayout.Button(s, gsButtonSmall))
+                Util.animate(ScriplayPlugin.maidList[0].maid, this.debug_playMotion, true, 0.5f, 1f, false);
+                this.debug_playMotionQueue.Enqueue(this.debug_playMotion);
+                bool flag9 = this.debug_playMotionQueue.Count > 3;
+                if (flag9)
                 {
-                    Util.animate(maidList[0].maid, s, true);
+                    this.debug_playMotionQueue.Dequeue();
+                }
+                this.debug_playMotion = "";
+            }
+            foreach (string text2 in this.debug_playMotionQueue)
+            {
+                bool flag10 = GUILayout.Button(text2, this.gsButtonSmall, new GUILayoutOption[0]);
+                if (flag10)
+                {
+                    Util.animate(ScriplayPlugin.maidList[0].maid, text2, true, 0.5f, 1f, false);
                 }
             }
-
-            GUILayout.Label("表情再生", gsLabelSmall);
-            debug_face = GUILayout.TextField(debug_face);
-            if (Event.current.keyCode == KeyCode.Return && debug_face != "")
+            GUILayout.Label("表情再生", this.gsLabelSmall, new GUILayoutOption[0]);
+            this.debug_face = GUILayout.TextField(this.debug_face, new GUILayoutOption[0]);
+            bool flag11 = Event.current.keyCode == KeyCode.Return && this.debug_face != "";
+            if (flag11)
             {
-                maidList[0].change_faceAnime(debug_face);
-                debug_faceQueue.Enqueue(debug_face);
-                if (debug_faceQueue.Count > 3) debug_faceQueue.Dequeue();
-                debug_face = "";
-            }
-            foreach (string s in debug_faceQueue)
-            {
-                if (GUILayout.Button(s, gsButtonSmall))
+                ScriplayPlugin.maidList[0].change_faceAnime(this.debug_face, -1f);
+                this.debug_faceQueue.Enqueue(this.debug_face);
+                bool flag12 = this.debug_faceQueue.Count > 3;
+                if (flag12)
                 {
-                    maidList[0].change_faceAnime(s);
+                    this.debug_faceQueue.Dequeue();
+                }
+                this.debug_face = "";
+            }
+            foreach (string text3 in this.debug_faceQueue)
+            {
+                bool flag13 = GUILayout.Button(text3, this.gsButtonSmall, new GUILayoutOption[0]);
+                if (flag13)
+                {
+                    ScriplayPlugin.maidList[0].change_faceAnime(text3, -1f);
                 }
             }
-
-            GUILayout.Label("トースト再生", gsLabelSmall);
-            debug_toast = GUILayout.TextField(debug_toast);
-            if (Event.current.keyCode == KeyCode.Return && debug_toast != "")
+            GUILayout.Label("トースト再生", this.gsLabelSmall, new GUILayoutOption[0]);
+            this.debug_toast = GUILayout.TextField(this.debug_toast, new GUILayoutOption[0]);
+            bool flag14 = Event.current.keyCode == KeyCode.Return && this.debug_toast != "";
+            if (flag14)
             {
-                toast(debug_toast);
-                debug_toastQueue.Enqueue(debug_toast);
-                if (debug_toastQueue.Count > 3) debug_toastQueue.Dequeue();
-                debug_toast = "";
-            }
-            foreach (string s in debug_toastQueue)
-            {
-                if (GUILayout.Button(s, gsButtonSmall))
+                ScriplayPlugin.toast(this.debug_toast);
+                this.debug_toastQueue.Enqueue(this.debug_toast);
+                bool flag15 = this.debug_toastQueue.Count > 3;
+                if (flag15)
                 {
-                    toast(s);
+                    this.debug_toastQueue.Dequeue();
+                }
+                this.debug_toast = "";
+            }
+            foreach (string text4 in this.debug_toastQueue)
+            {
+                bool flag16 = GUILayout.Button(text4, this.gsButtonSmall, new GUILayoutOption[0]);
+                if (flag16)
+                {
+                    ScriplayPlugin.toast(text4);
                 }
             }
-
-            GUILayout.Label("スクリプト実行", gsLabelSmall);
-            if (!scriplayContext.scriptFinished)
+            GUILayout.Label("スクリプト実行", this.gsLabelSmall, new GUILayoutOption[0]);
+            bool flag17 = !this.scriplayContext.scriptFinished;
+            if (flag17)
             {
-                GUILayout.Label("　（スクリプト実行中）", gsLabelSmall);
+                GUILayout.Label("\u3000（スクリプト実行中）", this.gsLabelSmall, new GUILayoutOption[0]);
             }
             else
             {
-                debug_script = GUILayout.TextField(debug_script);
-                if (Event.current.keyCode == KeyCode.Return && debug_script != "")
+                this.debug_script = GUILayout.TextField(this.debug_script, new GUILayoutOption[0]);
+                bool flag18 = Event.current.keyCode == KeyCode.Return && this.debug_script != "";
+                if (flag18)
                 {
-                    this.scriplayContext = ScriplayContext.readScriptFile("スクリプト実行テスト", debug_script.Split(new string[] { "\r\n" }, StringSplitOptions.None));
-                    debug_scriptQueue.Enqueue(debug_script);
-                    if (debug_scriptQueue.Count > 3) debug_scriptQueue.Dequeue();
-                    debug_script = "";
-                }
-                foreach (string s in debug_scriptQueue)
-                {
-                    if (GUILayout.Button(s, gsButtonSmall))
+                    this.scriplayContext = ScriplayContext.readScriptFile("スクリプト実行テスト", this.debug_script.Split(new string[]
                     {
-                        this.scriplayContext = ScriplayContext.readScriptFile("スクリプト実行テスト", s.Split(new string[] { "\r\n" }, StringSplitOptions.None));
+                        "\r\n"
+                    }, StringSplitOptions.None));
+                    this.debug_scriptQueue.Enqueue(this.debug_script);
+                    bool flag19 = this.debug_scriptQueue.Count > 3;
+                    if (flag19)
+                    {
+                        this.debug_scriptQueue.Dequeue();
+                    }
+                    this.debug_script = "";
+                }
+                foreach (string text5 in this.debug_scriptQueue)
+                {
+                    bool flag20 = GUILayout.Button(text5, this.gsButtonSmall, new GUILayoutOption[0]);
+                    if (flag20)
+                    {
+                        this.scriplayContext = ScriplayContext.readScriptFile("スクリプト実行テスト", text5.Split(new string[]
+                        {
+                            "\r\n"
+                        }, StringSplitOptions.None));
                     }
                 }
             }
-
-
-            GUILayout.Label("各Table確認", gsLabelSmall);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Personal", gsLabelSmall);
-            GUILayout.Label((maidList.Count != 0) ? maidList[0].sPersonal : "メイドがロードされていません", gsLabelSmall);
+            GUILayout.Label("各Table確認", this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+            GUILayout.Label("Personal", this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label((ScriplayPlugin.maidList.Count != 0) ? ScriplayPlugin.maidList[0].sPersonal : "メイドがロードされていません", this.gsLabelSmall, new GUILayoutOption[0]);
             GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Category", gsLabelSmall);
-            debug_ovtQueryMap["Category"] = GUILayout.TextField(debug_ovtQueryMap["Category"]);
+            GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+            GUILayout.Label("Category", this.gsLabelSmall, new GUILayoutOption[0]);
+            this.debug_ovtQueryMap["Category"] = GUILayout.TextField(this.debug_ovtQueryMap["Category"], new GUILayoutOption[0]);
             GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("OnceVoice", gsButtonSmall))
+            GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+            bool flag21 = GUILayout.Button("OnceVoice", this.gsButtonSmall, new GUILayoutOption[0]);
+            if (flag21)
             {
-                debug_ovtQueryMap["Personal"] = maidList[0].sPersonal;
-                StringBuilder str = new StringBuilder();
-                foreach (string s in OnceVoiceTable.queryTable(debug_ovtQueryMap["Personal"], debug_ovtQueryMap["Category"]))
+                this.debug_ovtQueryMap["Personal"] = ScriplayPlugin.maidList[0].sPersonal;
+                StringBuilder stringBuilder = new StringBuilder();
+                foreach (string str in ScriplayPlugin.OnceVoiceTable.queryTable(this.debug_ovtQueryMap["Personal"], this.debug_ovtQueryMap["Category"]))
                 {
-                    str.Append(s + ",");
+                    stringBuilder.Append(str + ",");
                 }
-                Util.info(string.Format("OnceVoiceTable　クエリ結果 {0},{1} \r\n {2}", debug_ovtQueryMap["Personal"], debug_ovtQueryMap["Category"], str.ToString()));
+                Util.info(string.Format("OnceVoiceTable\u3000クエリ結果 {0},{1} \r\n {2}", this.debug_ovtQueryMap["Personal"], this.debug_ovtQueryMap["Category"], stringBuilder.ToString()));
             }
-            if (GUILayout.Button("LoopVoice", gsButtonSmall))
+            bool flag22 = GUILayout.Button("LoopVoice", this.gsButtonSmall, new GUILayoutOption[0]);
+            if (flag22)
             {
-                debug_ovtQueryMap["Personal"] = maidList[0].sPersonal;
-                StringBuilder str = new StringBuilder();
-                foreach (string s in LoopVoiceTable.queryTable(debug_ovtQueryMap["Personal"], debug_ovtQueryMap["Category"]))
+                this.debug_ovtQueryMap["Personal"] = ScriplayPlugin.maidList[0].sPersonal;
+                StringBuilder stringBuilder2 = new StringBuilder();
+                foreach (string str2 in ScriplayPlugin.LoopVoiceTable.queryTable(this.debug_ovtQueryMap["Personal"], this.debug_ovtQueryMap["Category"]))
                 {
-                    str.Append(s + ",");
+                    stringBuilder2.Append(str2 + ",");
                 }
-                Util.info(string.Format("LoopVoiceTable　クエリ結果 {0},{1} \r\n {2}", debug_ovtQueryMap["Personal"], debug_ovtQueryMap["Category"], str.ToString()));
+                Util.info(string.Format("LoopVoiceTable\u3000クエリ結果 {0},{1} \r\n {2}", this.debug_ovtQueryMap["Personal"], this.debug_ovtQueryMap["Category"], stringBuilder2.ToString()));
             }
-            if (GUILayout.Button("Motion", gsButtonSmall))
+            bool flag23 = GUILayout.Button("Motion", this.gsButtonSmall, new GUILayoutOption[0]);
+            if (flag23)
             {
-                debug_ovtQueryMap["Personal"] = maidList[0].sPersonal;
-                StringBuilder str = new StringBuilder();
-                foreach (MotionInfo mi in MotionTable.queryTable_motionNameBase(debug_ovtQueryMap["Category"]))
+                this.debug_ovtQueryMap["Personal"] = ScriplayPlugin.maidList[0].sPersonal;
+                StringBuilder stringBuilder3 = new StringBuilder();
+                foreach (ScriplayPlugin.MotionInfo motionInfo in ScriplayPlugin.MotionTable.queryTable_motionNameBase(this.debug_ovtQueryMap["Category"], "-"))
                 {
-                    str.Append(mi.motionName + ",");
+                    stringBuilder3.Append(motionInfo.motionName + ",");
                 }
-                Util.info(string.Format("MotionTable　クエリ結果 {0}  \r\n {1}", debug_ovtQueryMap["Category"], str.ToString()));
+                Util.info(string.Format("MotionTable\u3000クエリ結果 {0}  \r\n {1}", this.debug_ovtQueryMap["Category"], stringBuilder3.ToString()));
             }
-            if (GUILayout.Button("Face", gsButtonSmall))
+            bool flag24 = GUILayout.Button("Face", this.gsButtonSmall, new GUILayoutOption[0]);
+            if (flag24)
             {
-                debug_ovtQueryMap["Personal"] = maidList[0].sPersonal;
-                StringBuilder str = new StringBuilder();
-                foreach (string mi in FaceTable.queryTable(debug_ovtQueryMap["Category"]))
+                this.debug_ovtQueryMap["Personal"] = ScriplayPlugin.maidList[0].sPersonal;
+                StringBuilder stringBuilder4 = new StringBuilder();
+                foreach (string str3 in ScriplayPlugin.FaceTable.queryTable(this.debug_ovtQueryMap["Category"]))
                 {
-                    str.Append(mi + ",");
+                    stringBuilder4.Append(str3 + ",");
                 }
-                Util.info(string.Format("FaceTable　クエリ結果 {0}  \r\n {1}", debug_ovtQueryMap["Category"], str.ToString()));
+                Util.info(string.Format("FaceTable\u3000クエリ結果 {0}  \r\n {1}", this.debug_ovtQueryMap["Category"], stringBuilder4.ToString()));
             }
             GUILayout.EndHorizontal();
-
-            if (maidList.Count != 0)
+            bool flag25 = ScriplayPlugin.maidList.Count != 0;
+            if (flag25)
             {
-                IMaid maid = maidList[0];
-                GUILayout.Label("メインメイド状態", gsLabelSmall);
-                GUILayout.BeginHorizontal();
-                var maidInfoTable = new Dictionary<string, string>()
-                    {
-                        {"性格",               maid.sPersonal },
-                        {"再生中ボイス",       maid.getPlayingVoice() },
-                        {"再生中モーション",    maid.getCurrentMotionName() },
-                    };
-
-                if (GUILayout.Button("潮", gsButtonSmall))
+                ScriplayPlugin.IMaid maid = ScriplayPlugin.maidList[0];
+                GUILayout.Label("メインメイド状態", this.gsLabelSmall, new GUILayoutOption[0]);
+                GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+                Dictionary<string, string> dictionary = new Dictionary<string, string>();
+                dictionary.Add("性格", maid.sPersonal);
+                dictionary.Add("再生中ボイス", maid.getPlayingVoice());
+                dictionary.Add("再生中モーション", maid.getCurrentMotionName());
+                bool flag26 = GUILayout.Button("潮", this.gsButtonSmall, new GUILayoutOption[0]);
+                if (flag26)
                 {
                     maid.change_sio();
                 }
-                if (GUILayout.Button("尿", gsButtonSmall))
+                bool flag27 = GUILayout.Button("尿", this.gsButtonSmall, new GUILayoutOption[0]);
+                if (flag27)
                 {
                     maid.change_nyo();
                 }
                 GUILayout.EndHorizontal();
-                GUILayout.Space(10);
-
+                GUILayout.Space(10f);
             }
-
             GUILayout.EndScrollView();
-
             GUI.DragWindow();
         }
 
-        /// <summary>
-        /// Unity MonoBehaviour
-        /// 毎フレーム呼ばれる処理
-        /// </summary>
+        // Token: 0x06000011 RID: 17 RVA: 0x00003A84 File Offset: 0x00001C84
         public void Update()
         {
-            if (!gameCfg_isPluginEnabledScene) return;
-            //int gameMaidCount = GameMain.Instance.CharacterMgr.GetMaidCount();    //内部的には要素数１８固定の配列のため判定に使えない
-            //if (GameMain.Instance.CharacterMgr.GetMaid(0)!=null  && maidList.Count != gameMaidCount) initMaidList();
-            if (GameMain.Instance.CharacterMgr.GetMaid(maidList.Count) != null    //メイド数1増えた場合
-                || (maidList.Count > 0 && GameMain.Instance.CharacterMgr.GetMaid(maidList.Count - 1) == null))     //メイド数1減った場合
-                initMaidList();
-
-            //ショートカットキー
-
-            //スクリプトの実行
-            if (!scriplayContext.scriptFinished)
+            bool flag = !this.gameCfg_isPluginEnabledScene;
+            if (!flag)
             {
-                scriplayContext.Update();
+                bool flag2 = GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count) != null || (ScriplayPlugin.maidList.Count > 0 && GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count - 1) == null);
+                if (flag2)
+                {
+                    this.initMaidList();
+                }
+                bool flag3 = !this.scriplayContext.scriptFinished;
+                if (flag3)
+                {
+                    this.scriplayContext.Update();
+                }
+                foreach (ScriplayPlugin.IMaid maid in ScriplayPlugin.maidList)
+                {
+                    Util.sw_start("");
+                    maid.update_playing();
+                    Util.sw_showTime("update_playing");
+                    maid.update_eyeToCam();
+                    maid.update_headToCam();
+                    Util.sw_showTime("update_eyeHeadCamera");
+                    Util.sw_stop("");
+                }
             }
-
-            //各メイド処理
-            foreach (IMaid maid in maidList)
-            {
-                Util.sw_start();
-
-                //再生処理　一括変更
-                maid.update_playing();
-                Util.sw_showTime("update_playing");
-
-                maid.update_eyeToCam();
-                maid.update_headToCam();
-
-                Util.sw_showTime("update_eyeHeadCamera");
-                Util.sw_stop();
-
-            }
-
-
-
-
         }
 
-
-        /// <summary>
-        /// Updateの後に呼ばれる処理
-        /// </summary>
+        // Token: 0x06000012 RID: 18 RVA: 0x000026C0 File Offset: 0x000008C0
         public void LateUpdate()
         {
-
         }
 
-        /// <summary>
-        /// SE変更処理
-        /// </summary>
+        // Token: 0x06000013 RID: 19 RVA: 0x00003BAC File Offset: 0x00001DAC
         public static void change_SE(string seFileName)
         {
             GameMain.Instance.SoundMgr.StopSe();
-            if (seFileName != "") GameMain.Instance.SoundMgr.PlaySe(seFileName, true);
+            bool flag = seFileName != "";
+            if (flag)
+            {
+                GameMain.Instance.SoundMgr.PlaySe(seFileName, true);
+            }
         }
 
-
+        // Token: 0x06000014 RID: 20 RVA: 0x00003BEB File Offset: 0x00001DEB
         public void change_SE_vibeLow()
         {
-            change_SE("se020.ogg");
+            ScriplayPlugin.change_SE("se020.ogg");
         }
+
+        // Token: 0x06000015 RID: 21 RVA: 0x00003BF9 File Offset: 0x00001DF9
         public void change_SE_vibeHigh()
         {
-            change_SE("se019.ogg");
+            ScriplayPlugin.change_SE("se019.ogg");
         }
+
+        // Token: 0x06000016 RID: 22 RVA: 0x00003C07 File Offset: 0x00001E07
         public void change_SE_stop()
         {
-            change_SE("");
+            ScriplayPlugin.change_SE("");
         }
+
+        // Token: 0x06000017 RID: 23 RVA: 0x00003C15 File Offset: 0x00001E15
         public void change_SE_insertLow()
         {
-            change_SE("se029.ogg");
+            ScriplayPlugin.change_SE("se029.ogg");
         }
+
+        // Token: 0x06000018 RID: 24 RVA: 0x00003C23 File Offset: 0x00001E23
         public void change_SE_insertHigh()
         {
-            change_SE("se028.ogg");
+            ScriplayPlugin.change_SE("se028.ogg");
         }
+
+        // Token: 0x06000019 RID: 25 RVA: 0x00003C31 File Offset: 0x00001E31
         public void change_SE_slapLow()
         {
-            change_SE("se012.ogg");
+            ScriplayPlugin.change_SE("se012.ogg");
         }
+
+        // Token: 0x0600001A RID: 26 RVA: 0x00003C3F File Offset: 0x00001E3F
         public void change_SE_slapHigh()
         {
-            change_SE("se013.ogg");
+            ScriplayPlugin.change_SE("se013.ogg");
         }
 
+        // Token: 0x0600001B RID: 27 RVA: 0x00003C4D File Offset: 0x00001E4D
+        public static void toast(string message)
+        {
+            ScriplayPlugin.ToastUtil.Toast<string>(ScriplayPlugin.instance, message);
+        }
 
+        // Token: 0x04000001 RID: 1
+        public static ScriplayPlugin.ScriplayConfig cfg = null;
 
+        // Token: 0x04000002 RID: 2
+        public static List<string> zeccyou_fn_list = new List<string>();
+
+        // Token: 0x04000003 RID: 3
+        public static List<string> motionNameAllList = new List<string>();
+
+        // Token: 0x04000004 RID: 4
+        public static HashSet<string> motionCategorySet = new HashSet<string>();
+
+        // Token: 0x04000005 RID: 5
+        private Transform[] maidHead = new Transform[20];
+
+        // Token: 0x04000006 RID: 6
+        public static List<ScriplayPlugin.IMaid> maidList = new List<ScriplayPlugin.IMaid>();
+
+        // Token: 0x04000007 RID: 7
+        public static List<ScriplayPlugin.IMan> manList = new List<ScriplayPlugin.IMan>();
+
+        // Token: 0x04000008 RID: 8
+        private bool gameCfg_isChuBLipEnabled = false;
+
+        // Token: 0x04000009 RID: 9
+        private bool gameCfg_isVREnabled = false;
+
+        // Token: 0x0400000A RID: 10
+        private bool gameCfg_isPluginEnabledScene = false;
+
+        // Token: 0x0400000B RID: 11
+        private static Dictionary<string, string> motionBaseRegexDefDic = new Dictionary<string, string>
+        {
+            {
+                "_[123]_.*",
+                "_"
+            },
+            {
+                "_[123]\\w\\d\\d.*",
+                "_"
+            },
+            {
+                "\\.anm",
+                ""
+            },
+            {
+                "_asiname_.*",
+                "_"
+            },
+            {
+                "_cli[\\d]?_.*",
+                "_"
+            },
+            {
+                "_daki_.*",
+                "_"
+            },
+            {
+                "_fera_.*",
+                "_"
+            },
+            {
+                "_gr_.*",
+                "_"
+            },
+            {
+                "_housi_.*",
+                "_"
+            },
+            {
+                "_hibu_.*",
+                "_"
+            },
+            {
+                "_hibuhiraki_.*",
+                "_"
+            },
+            {
+                "_ir_.*",
+                "_"
+            },
+            {
+                "_kakae_.*",
+                "_"
+            },
+            {
+                "_kuti_.*",
+                "_"
+            },
+            {
+                "_kiss_.*",
+                "_"
+            },
+            {
+                "_momi_.*",
+                "_"
+            },
+            {
+                "_onani_.*",
+                "_"
+            },
+            {
+                "_oku_.*",
+                "_"
+            },
+            {
+                "_peace_.*",
+                "_"
+            },
+            {
+                "_ran4p_.*",
+                "_"
+            },
+            {
+                "_ryoutenaburi_.*",
+                "_"
+            },
+            {
+                "_siri_.*",
+                "_"
+            },
+            {
+                "_sissin_.*",
+                "_"
+            },
+            {
+                "_shasei_.*",
+                "_"
+            },
+            {
+                "_shaseigo_.*",
+                "_"
+            },
+            {
+                "_sixnine_.*",
+                "_"
+            },
+            {
+                "_surituke_.*",
+                "_"
+            },
+            {
+                "_siriname_.*",
+                "_"
+            },
+            {
+                "_taiki_.*",
+                "_"
+            },
+            {
+                "_tikubi_.*",
+                "_"
+            },
+            {
+                "_tekoki_.*",
+                "_"
+            },
+            {
+                "_tikubiname_.*",
+                "_"
+            },
+            {
+                "_tati_.*",
+                "_"
+            },
+            {
+                "_ubi\\d?_.*",
+                "_"
+            },
+            {
+                "_vibe_.*",
+                "_"
+            },
+            {
+                "_zeccyougo_.*",
+                "_"
+            },
+            {
+                "_zeccyou_.*",
+                "_"
+            },
+            {
+                "_zikkyou_.*",
+                "_"
+            }
+        };
+
+        // Token: 0x0400000C RID: 12
+        private static Dictionary<Regex, string> motionBaseRegexDic = new Dictionary<Regex, string>();
+
+        // Token: 0x0400000D RID: 13
+        private static readonly float UIwidth = 300f;
+
+        // Token: 0x0400000E RID: 14
+        private static readonly float UIheight = 400f;
+
+        // Token: 0x0400000F RID: 15
+        private static readonly float UIposX_rightMargin = 10f;
+
+        // Token: 0x04000010 RID: 16
+        private static readonly float UIposY_bottomMargin = 120f;
+
+        // Token: 0x04000011 RID: 17
+        private Rect node_main = new Rect((float)Screen.width - ScriplayPlugin.UIposX_rightMargin - ScriplayPlugin.UIwidth, (float)Screen.height - ScriplayPlugin.UIposY_bottomMargin - ScriplayPlugin.UIheight, ScriplayPlugin.UIwidth, ScriplayPlugin.UIheight);
+
+        // Token: 0x04000012 RID: 18
+        private Rect node_scripts = new Rect((float)Screen.width - ScriplayPlugin.UIposX_rightMargin - ScriplayPlugin.UIwidth, (float)Screen.height - (ScriplayPlugin.UIheight + ScriplayPlugin.UIposY_bottomMargin) - ScriplayPlugin.UIheight, ScriplayPlugin.UIwidth, ScriplayPlugin.UIheight);
+
+        // Token: 0x04000013 RID: 19
+        private static readonly float UIwidth_showArea = 400f;
+
+        // Token: 0x04000014 RID: 20
+        private static readonly float UIheight_showArea = 300f;
+
+        // Token: 0x04000015 RID: 21
+        private static readonly float UIposX_rightMargin_showArea = 10f;
+
+        // Token: 0x04000016 RID: 22
+        private static readonly float UIposY_bottomMargin_showArea = 10f;
+
+        // Token: 0x04000017 RID: 23
+        private Rect node_showArea = new Rect((float)Screen.width - ScriplayPlugin.UIposX_rightMargin_showArea - ScriplayPlugin.UIwidth_showArea, (float)Screen.height - ScriplayPlugin.UIposY_bottomMargin_showArea - ScriplayPlugin.UIheight_showArea, ScriplayPlugin.UIwidth_showArea, ScriplayPlugin.UIheight_showArea);
+
+        // Token: 0x04000018 RID: 24
+        private Vector2 scrollPosition = default(Vector2);
+
+        // Token: 0x04000019 RID: 25
+        private Queue<string> debug_strQueue = new Queue<string>();
+
+        // Token: 0x0400001A RID: 26
+        private Dictionary<string, string> debug_ovtQueryMap = new Dictionary<string, string>
+        {
+            {
+                "Personal",
+                ""
+            },
+            {
+                "Category",
+                ""
+            }
+        };
+
+        // Token: 0x0400001B RID: 27
+        private string debug_toast = "";
+
+        // Token: 0x0400001C RID: 28
+        private Queue<string> debug_toastQueue = new Queue<string>();
+
+        // Token: 0x0400001D RID: 29
+        private string debug_playVoice = "";
+
+        // Token: 0x0400001E RID: 30
+        private Queue<string> debug_playVoiceQueue = new Queue<string>();
+
+        // Token: 0x0400001F RID: 31
+        private string debug_playMotion = "";
+
+        // Token: 0x04000020 RID: 32
+        private Queue<string> debug_playMotionQueue = new Queue<string>();
+
+        // Token: 0x04000021 RID: 33
+        private string debug_face = "";
+
+        // Token: 0x04000022 RID: 34
+        private Queue<string> debug_faceQueue = new Queue<string>();
+
+        // Token: 0x04000023 RID: 35
+        private string debug_script = "";
+
+        // Token: 0x04000024 RID: 36
+        private Queue<string> debug_scriptQueue = new Queue<string>();
+
+        // Token: 0x04000025 RID: 37
+        private ScriplayContext scriplayContext = ScriplayContext.None;
+
+        // Token: 0x04000026 RID: 38
+        private bool en_showScripts = false;
+
+        // Token: 0x04000027 RID: 39
+        private Vector2 scriptsList_scrollPosition = default(Vector2);
+
+        // Token: 0x04000028 RID: 40
+        private List<string> scripts_fullpathList = new List<string>();
+
+        // Token: 0x04000029 RID: 41
+        private static MonoBehaviour instance;
+
+        // Token: 0x0400002A RID: 42
+        private Vector2 showArea_scrollPosition = default(Vector2);
+
+        // Token: 0x0400002B RID: 43
+        private GUIStyle gsLabelTitle = new GUIStyle("label");
+
+        // Token: 0x0400002C RID: 44
+        private GUIStyle gsLabel = new GUIStyle("label");
+
+        // Token: 0x0400002D RID: 45
+        private GUIStyle gsLabelSmall = new GUIStyle("label");
+
+        // Token: 0x0400002E RID: 46
+        private GUIStyle gsButton = new GUIStyle("button");
+
+        // Token: 0x0400002F RID: 47
+        private GUIStyle gsButtonSmall = new GUIStyle("button");
+
+        // Token: 0x04000030 RID: 48
+        public static ScriplayPlugin.VoiceTable OnceVoiceTable = new ScriplayPlugin.VoiceTable("OnceVoice");
+
+        // Token: 0x04000031 RID: 49
+        public static ScriplayPlugin.VoiceTable LoopVoiceTable = new ScriplayPlugin.VoiceTable("LoopVoice");
+
+        // Token: 0x02000005 RID: 5
+        public class ScriplayConfig
+        {
+            // Token: 0x04000071 RID: 113
+            internal bool debugMode = true;
+
+            // Token: 0x04000072 RID: 114
+            internal readonly float faceAnimeFadeTime = 1f;
+
+            // Token: 0x04000073 RID: 115
+            internal readonly string csvPath = "Sybaris\\UnityInjector\\Config\\Scriplay\\csv\\";
+
+            // Token: 0x04000074 RID: 116
+            internal readonly string scriptsPath = "Sybaris\\UnityInjector\\Config\\Scriplay\\scripts\\";
+
+            // Token: 0x04000075 RID: 117
+            internal string onceVoicePrefix = "oncevoice_";
+
+            // Token: 0x04000076 RID: 118
+            internal string loopVoicePrefix = "loopvoice_";
+
+            // Token: 0x04000077 RID: 119
+            internal string motionListPrefix = "motion_";
+
+            // Token: 0x04000078 RID: 120
+            internal string faceListPrefix = "face_";
+
+            // Token: 0x04000079 RID: 121
+            internal string PluginName = "Scriplay";
+
+            // Token: 0x0400007A RID: 122
+            internal string debugPrintColor = "red";
+
+            // Token: 0x0400007B RID: 123
+            internal bool enModMotionLoad = false;
+
+            // Token: 0x0400007C RID: 124
+            internal float sio_baseTime = 1f;
+
+            // Token: 0x0400007D RID: 125
+            internal float nyo_baseTime = 3f;
+
+            // Token: 0x0400007E RID: 126
+            internal int studioModeSceneLevel = 26;
+        }
+
+        // Token: 0x02000006 RID: 6
         public class IMaid
         {
-            public readonly Maid maid;
-            public string sPersonal;      //性格名 ex.Muku
-
-
-            public bool loopVoiceBackuped = false; //OnceVoice再生で遮られたLoopVoiceを復元する必要あるか？
-
-            public string currentLoopVoice = "";
-            private string currentFaceAnime = "";
-
+            // Token: 0x0600004B RID: 75 RVA: 0x00006574 File Offset: 0x00004774
             public IMaid(int maidNo, Maid maid)
             {
                 this.maid = maid;
                 this.sPersonal = maid.status.personal.uniqueName;
-
                 this.maidNo = maidNo;
-                this.maid.EyeToCamera((Maid.EyeMoveType)5, 0.8f); //顔と目の追従を有効にする fadeTime=0.8sec
-                                                                  //        public enum EyeMoveType
-                                                                  //{
-                                                                  //    無し,
-                                                                  //    無視する,
-                                                                  //    顔を向ける,
-                                                                  //    顔だけ動かす,
-                                                                  //    顔をそらす,
-                                                                  //    目と顔を向ける,      ←　これ
-                                                                  //    目だけ向ける,
-                                                                  //    目だけそらす
-                                                                  //}
-
-
+                this.maid.EyeToCamera(Maid.EyeMoveType.目と顔を向ける, 0.8f);
             }
 
+            // Token: 0x0600004C RID: 76 RVA: 0x00006630 File Offset: 0x00004830
             public bool isPlayingVoice()
             {
-                return maid.AudioMan.audiosource.isPlaying;
+                return this.maid.AudioMan.audiosource.isPlaying;
             }
+
+            // Token: 0x0600004D RID: 77 RVA: 0x00006658 File Offset: 0x00004858
             public bool isPlayingMotion()
             {
-                //Unity Animation.IsPlaying
-                //https://docs.unity3d.com/ScriptReference/Animation.IsPlaying.html
-                return maid.body0.m_Animation.isPlaying;
+                return this.maid.body0.m_Animation.isPlaying;
             }
 
-            /// <summary>
-            /// 再生中のボイスを返す
-            /// </summary>
-            /// <param name="maid"></param>
-            /// <returns>再生ナシなら"", 再生中なら*.ogg</returns>
+            // Token: 0x0600004E RID: 78 RVA: 0x00006680 File Offset: 0x00004880
             public string getPlayingVoice()
             {
-                if (!maid.AudioMan.isPlay()) return "";
-                return maid.AudioMan.FileName;
+                bool flag = !this.maid.AudioMan.isPlay();
+                string result;
+                if (flag)
+                {
+                    result = "";
+                }
+                else
+                {
+                    result = this.maid.AudioMan.FileName;
+                }
+                return result;
             }
 
-            /// <summary>
-            /// メイドの位置を相対座標で指定した分だけ移動
-            /// </summary>
-            /// <param name="x"></param>
-            /// <param name="y"></param>
-            /// <param name="z"></param>
-            public Vector3 change_positionRelative(float x = 0, float y = 0, float z = 0)
+            // Token: 0x0600004F RID: 79 RVA: 0x000066C4 File Offset: 0x000048C4
+            public Vector3 change_positionRelative(float x = 0f, float y = 0f, float z = 0f)
             {
-                Vector3 v = maid.transform.position;
-                maid.transform.position = new Vector3(v.x + x, v.y + y, v.z + z);
-                return maid.transform.position;
+                Vector3 position = this.maid.transform.position;
+                this.maid.transform.position = new Vector3(position.x + x, position.y + y, position.z + z);
+                return this.maid.transform.position;
             }
-            /// <summary>
-            /// メイドの位置を絶対座標で指定
-            /// </summary>
-            /// <param name="x"></param>
-            /// <param name="y"></param>
-            /// <param name="z"></param>
-            public Vector3 change_positionAbsolute(float x = 0, float y = 0, float z = 0, bool keepX = false, bool keepY = false, bool keepZ = false)
+
+            // Token: 0x06000050 RID: 80 RVA: 0x00006728 File Offset: 0x00004928
+            public Vector3 change_positionAbsolute(float x = 0f, float y = 0f, float z = 0f, bool keepX = false, bool keepY = false, bool keepZ = false)
             {
-                Vector3 v = maid.transform.eulerAngles;
-                maid.transform.position = new Vector3(keepX ? v.x : x, keepY ? v.y : y, keepZ ? v.z : z);
-                return maid.transform.position;
+                Vector3 eulerAngles = this.maid.transform.eulerAngles;
+                this.maid.transform.position = new Vector3(keepX ? eulerAngles.x : x, keepY ? eulerAngles.y : y, keepZ ? eulerAngles.z : z);
+                return this.maid.transform.position;
             }
-            /// <summary>
-            /// メイドの現在位置を絶対座標で返す
-            /// </summary>
-            /// <returns></returns>
+
+            // Token: 0x06000051 RID: 81 RVA: 0x00006798 File Offset: 0x00004998
             public Vector3 getPosition()
             {
-                return maid.transform.position;
+                return this.maid.transform.position;
             }
 
-            /// <summary>
-            /// メイドの向きを絶対座標系の向き（度）で指定
-            /// </summary>
-            /// <param name="x_deg"></param>
-            /// <param name="y_deg"></param>
-            /// <param name="z_deg"></param>
-            /// <returns></returns>
-            public Vector3 change_angleAbsolute(float x_deg = 0, float y_deg = 0, float z_deg = 0, bool keepX = false, bool keepY = false, bool keepZ = false)
+            // Token: 0x06000052 RID: 82 RVA: 0x000067BC File Offset: 0x000049BC
+            public Vector3 change_angleAbsolute(float x_deg = 0f, float y_deg = 0f, float z_deg = 0f, bool keepX = false, bool keepY = false, bool keepZ = false)
             {
-                Vector3 v = maid.transform.eulerAngles;
-                maid.transform.eulerAngles = new Vector3(keepX ? v.x : x_deg, keepY ? v.y : y_deg, keepZ ? v.z : z_deg);
-                return maid.transform.eulerAngles;
+                Vector3 eulerAngles = this.maid.transform.eulerAngles;
+                this.maid.transform.eulerAngles = new Vector3(keepX ? eulerAngles.x : x_deg, keepY ? eulerAngles.y : y_deg, keepZ ? eulerAngles.z : z_deg);
+                return this.maid.transform.eulerAngles;
             }
-            /// <summary>
-            /// 指定角度だけメイドの向きを変える
-            /// </summary>
-            /// <param name="x_deg"></param>
-            /// <param name="y_deg"></param>
-            /// <param name="z_deg"></param>
-            /// <returns></returns>
-            public Vector3 change_angleRelative(float x_deg = 0, float y_deg = 0, float z_deg = 0)
+
+            // Token: 0x06000053 RID: 83 RVA: 0x0000682C File Offset: 0x00004A2C
+            public Vector3 change_angleRelative(float x_deg = 0f, float y_deg = 0f, float z_deg = 0f)
             {
-                Vector3 v = maid.transform.eulerAngles;
-                maid.transform.eulerAngles = new Vector3(v.x + x_deg, v.y + y_deg, v.z + z_deg);
-                return maid.transform.eulerAngles;
+                Vector3 eulerAngles = this.maid.transform.eulerAngles;
+                this.maid.transform.eulerAngles = new Vector3(eulerAngles.x + x_deg, eulerAngles.y + y_deg, eulerAngles.z + z_deg);
+                return this.maid.transform.eulerAngles;
             }
-            /// <summary>
-            /// メイドの向きを絶対座標系の向きで返す
-            /// </summary>
-            /// <returns></returns>
+
+            // Token: 0x06000054 RID: 84 RVA: 0x00006890 File Offset: 0x00004A90
             public Vector3 getAngle()
             {
-                return maid.transform.eulerAngles;
+                return this.maid.transform.eulerAngles;
             }
 
-
-
-            /// <summary>
-            /// 現在のメイド状態などに合わせて表情変更
-            /// </summary>
-            public void change_faceAnime(string faceAnime, float fadeTime = -1)
+            // Token: 0x06000055 RID: 85 RVA: 0x000068B4 File Offset: 0x00004AB4
+            public void change_faceAnime(string faceAnime, float fadeTime = -1f)
             {
-                if (currentFaceAnime == faceAnime) return;
-                if (fadeTime == -1) fadeTime = cfg.faceAnimeFadeTime * 2;
-                currentFaceAnime = faceAnime;
-
-                //TODO　Unityの把握している表情一覧に照らし合わせて、存在しない表情なら実行しない
-                maid.FaceAnime(currentFaceAnime, fadeTime, 0);
+                bool flag = this.currentFaceAnime == faceAnime;
+                if (!flag)
+                {
+                    bool flag2 = fadeTime == -1f;
+                    if (flag2)
+                    {
+                        fadeTime = ScriplayPlugin.cfg.faceAnimeFadeTime * 2f;
+                    }
+                    this.currentFaceAnime = faceAnime;
+                    this.maid.FaceAnime(this.currentFaceAnime, fadeTime, 0);
+                }
             }
-            public void change_faceAnime(List<string> faceAnimeList, float fadeTime = -1)
+
+            // Token: 0x06000056 RID: 86 RVA: 0x00006910 File Offset: 0x00004B10
+            public void change_faceAnime(List<string> faceAnimeList, float fadeTime = -1f)
             {
-                string face = Util.pickOneOrEmptyString(faceAnimeList);
-                if (face.Equals(""))
+                string text = Util.pickOneOrEmptyString(faceAnimeList, -1);
+                bool flag = text.Equals("");
+                if (flag)
                 {
                     Util.info("表情リストが空でした");
-                    return;
                 }
-                change_faceAnime(face, fadeTime);
+                else
+                {
+                    this.change_faceAnime(text, fadeTime);
+                }
             }
 
-
-            Regex reg_hoho = new Regex(@"(頬.)");
-            Regex reg_namida = new Regex(@"(涙.)");
-            /// <summary>
-            /// 頬・涙・よだれ　を設定
-            /// </summary>
-            /// <param name="hoho">0~3で指定、-1なら変更しない</param>
-            /// <param name="namida">0~3で指定、-1なら変更しない</param>
-            /// <param name="enableYodare"></param>
-            /// <returns></returns>
+            // Token: 0x06000057 RID: 87 RVA: 0x0000694C File Offset: 0x00004B4C
             public string change_FaceBlend(int hoho = -1, int namida = -1, bool enableYodare = false)
             {
-                //頬・涙を-1,0,1,2,3のいずれかへ制限
-                hoho = (int)Mathf.Clamp(hoho, -1, 3);
-                namida = (int)Mathf.Clamp(namida, -1, 3);
-
-                string currentFaceBlend = maid.FaceName3;
-                if (currentFaceBlend.Equals("オリジナル")) currentFaceBlend = "頬０涙０";    //初期状態ではオリジナルとなっているため、整合取る
-
-                string cheekStr = reg_hoho.Match(currentFaceBlend).Groups[1].Value;         //現在の頬値で初期化
-                string tearsStr = reg_namida.Match(currentFaceBlend).Groups[1].Value;
-                string yodareStr = "";
-
-                if (hoho == 0) cheekStr = "頬０";
-                if (hoho == 1) cheekStr = "頬１";
-                if (hoho == 2) cheekStr = "頬２";
-                if (hoho == 3) cheekStr = "頬３";
-
-                if (namida == 0) tearsStr = "涙０";
-                if (namida == 1) tearsStr = "涙１";
-                if (namida == 2) tearsStr = "涙２";
-                if (namida == 3) tearsStr = "涙３";
-
-                if (enableYodare) yodareStr = "よだれ";
-                string blendSetStr = cheekStr + tearsStr + yodareStr;
-                maid.FaceBlend(blendSetStr);
-                return blendSetStr;
+                hoho = Mathf.Clamp(hoho, -1, 3);
+                namida = Mathf.Clamp(namida, -1, 3);
+                string text = this.maid.FaceName3;
+                bool flag = text.Equals("オリジナル");
+                if (flag)
+                {
+                    text = "頬０涙０";
+                }
+                string str = this.reg_hoho.Match(text).Groups[1].Value;
+                string str2 = this.reg_namida.Match(text).Groups[1].Value;
+                string str3 = "";
+                bool flag2 = hoho == 0;
+                if (flag2)
+                {
+                    str = "頬０";
+                }
+                bool flag3 = hoho == 1;
+                if (flag3)
+                {
+                    str = "頬１";
+                }
+                bool flag4 = hoho == 2;
+                if (flag4)
+                {
+                    str = "頬２";
+                }
+                bool flag5 = hoho == 3;
+                if (flag5)
+                {
+                    str = "頬３";
+                }
+                bool flag6 = namida == 0;
+                if (flag6)
+                {
+                    str2 = "涙０";
+                }
+                bool flag7 = namida == 1;
+                if (flag7)
+                {
+                    str2 = "涙１";
+                }
+                bool flag8 = namida == 2;
+                if (flag8)
+                {
+                    str2 = "涙２";
+                }
+                bool flag9 = namida == 3;
+                if (flag9)
+                {
+                    str2 = "涙３";
+                }
+                if (enableYodare)
+                {
+                    str3 = "よだれ";
+                }
+                string text2 = str + str2 + str3;
+                this.maid.FaceBlend(text2);
+                return text2;
             }
 
-            /// <summary>
-            /// 瞳のY位置操作
-            /// </summary>
-            /// <param name="eyePosY">両目の瞳Y位置　０～５０？　０で初期値</param>
+            // Token: 0x06000058 RID: 88 RVA: 0x00006A80 File Offset: 0x00004C80
             private void updateMaidEyePosY(float eyePosY)
             {
-                eyePosY = Mathf.Clamp(eyePosY, 0f, 50f);    //最大値は不明　50？
-
-                Vector3 vl = maid.body0.trsEyeL.localPosition;
-                Vector3 vr = maid.body0.trsEyeR.localPosition;
-                const float fEyePosToSliderMul = 5000f;
-                maid.body0.trsEyeL.localPosition = new Vector3(vl.x, Math.Max(eyePosY / fEyePosToSliderMul, 0f), vl.z);
-                maid.body0.trsEyeR.localPosition = new Vector3(vr.x, Math.Min(eyePosY / fEyePosToSliderMul, 0f), vr.z);     //TODO -eyePosYかも。軸の正負が逆。
-
+                eyePosY = Mathf.Clamp(eyePosY, 0f, 50f);
+                Vector3 localPosition = this.maid.body0.trsEyeL.localPosition;
+                Vector3 localPosition2 = this.maid.body0.trsEyeR.localPosition;
+                this.maid.body0.trsEyeL.localPosition = new Vector3(localPosition.x, Math.Max(eyePosY / 5000f, 0f), localPosition.z);
+                this.maid.body0.trsEyeR.localPosition = new Vector3(localPosition2.x, Math.Min(eyePosY / 5000f, 0f), localPosition2.z);
             }
 
-            /// <summary>
-            /// 各種再生処理の一括変更
-            /// MaidState、感度、バイブ強度、
-            /// </summary>
+            // Token: 0x06000059 RID: 89 RVA: 0x00006B3C File Offset: 0x00004D3C
             public void update_playing()
             {
-                if (loopVoiceBackuped)
+                bool flag = this.loopVoiceBackuped;
+                if (flag)
                 {
-                    //　ループ音声を再生中、もしくは一回再生音声が再生済みなら介入してよい
-                    if (maid.AudioMan.audiosource.loop || (!maid.AudioMan.audiosource.loop && !maid.AudioMan.audiosource.isPlaying))
+                    bool flag2 = this.maid.AudioMan.audiosource.loop || (!this.maid.AudioMan.audiosource.loop && !this.maid.AudioMan.audiosource.isPlaying);
+                    if (flag2)
                     {
-                        change_LoopVoice(currentLoopVoice);
-                        //change_LoopVoice();
-                        loopVoiceBackuped = false;
+                        this.change_LoopVoice(this.currentLoopVoice);
+                        this.loopVoiceBackuped = false;
                     }
-
                 }
-
-                //何もモーション再生していなかったら、同一カテゴリの待機モーション探して再生を試みる。OnceMotionの後などを想定
-                if (!isPlayingMotion())
+                bool flag3 = !this.isPlayingMotion();
+                if (flag3)
                 {
-                    List<MotionAttribute> attList = new List<MotionAttribute>();
-                    attList.Add(MotionAttribute.Taiki);
-                    List<string> motionList = searchMotionList(getMotionNameBase(getCurrentMotionName()), attList);
-                    if (motionList.Count != 0)
+                    List<ScriplayPlugin.IMaid.MotionAttribute> list = new List<ScriplayPlugin.IMaid.MotionAttribute>();
+                    list.Add(ScriplayPlugin.IMaid.MotionAttribute.Taiki);
+                    List<string> list2 = this.searchMotionList(this.getMotionNameBase(this.getCurrentMotionName()), list);
+                    bool flag4 = list2.Count != 0;
+                    if (flag4)
                     {
-                        string motion = motionList[0];
-                        change_Motion(motion, isLoop: true);
+                        string motionNameOrNameBase = list2[0];
+                        this.change_Motion(motionNameOrNameBase, true, false, -1f, -1f);
                     }
                 }
             }
-            private float eyeToCam_turnSec = 0;
-            private float headToCam_turnSec = 0;
-            private EyeHeadToCamState eyeToCam_state = EyeHeadToCamState.Auto;
-            private EyeHeadToCamState headToCam_state = EyeHeadToCamState.Auto;
 
-            /// <summary>
-            /// 目線・顔をカメラへ向けるかの状態管理
-            /// </summary>
-            public class EyeHeadToCamState
-            {
-                private static int nextOrdinal = 0;
-                public static readonly List<EyeHeadToCamState> items = new List<EyeHeadToCamState>();
-                //フィールド一覧
-                public readonly int ordinal;            //このEnumのインスタンス順序
-                public readonly string viewStr;
-                //コンストラクタ
-                private EyeHeadToCamState(string viewStr)
-                {
-                    this.viewStr = viewStr;
-                    this.ordinal = nextOrdinal;
-                    nextOrdinal++;
-                    items.Add(this);
-                }
-                // 参照用インスタンス
-                public static readonly EyeHeadToCamState No = new EyeHeadToCamState("no");
-                public static readonly EyeHeadToCamState Auto = new EyeHeadToCamState("auto");
-                public static readonly EyeHeadToCamState Yes = new EyeHeadToCamState("yes");
-            }
-
-            public void change_eyeToCam(EyeHeadToCamState state)
+            // Token: 0x0600005A RID: 90 RVA: 0x00006C23 File Offset: 0x00004E23
+            public void change_eyeToCam(ScriplayPlugin.IMaid.EyeHeadToCamState state)
             {
                 this.eyeToCam_state = state;
             }
-            public void change_headToCam(EyeHeadToCamState state, float fadeSec = -1f)
+
+            // Token: 0x0600005B RID: 91 RVA: 0x00006C30 File Offset: 0x00004E30
+            public void change_headToCam(ScriplayPlugin.IMaid.EyeHeadToCamState state, float fadeSec = -1f)
             {
                 this.headToCam_state = state;
-                if (fadeSec != -1)
+                bool flag = fadeSec != -1f;
+                if (flag)
                 {
-                    maid.body0.HeadToCamFadeSpeed = fadeSec;
+                    this.maid.body0.HeadToCamFadeSpeed = fadeSec;
                 }
             }
 
-            /// <summary>
-            ///目線更新
-            /// ６～１０秒ごとに50％の確率で目線変更
-            /// </summary>
+            // Token: 0x0600005C RID: 92 RVA: 0x00006C68 File Offset: 0x00004E68
             public void update_eyeToCam()
             {
-                if (eyeToCam_state == EyeHeadToCamState.No)
+                bool flag = this.eyeToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.No;
+                if (flag)
                 {
-                    maid.body0.boEyeToCam = false;
-                    return;
+                    this.maid.body0.boEyeToCam = false;
                 }
-                else if (eyeToCam_state == EyeHeadToCamState.Yes)
+                else
                 {
-                    maid.body0.boEyeToCam = true;
-                    return;
-                }
-                else if (eyeToCam_state == EyeHeadToCamState.Auto)
-                {
-                    eyeToCam_turnSec -= Time.deltaTime;
-                    if (eyeToCam_turnSec > 0) return;
-
-                    if (UnityEngine.Random.Range(0, 100) < 50) maid.body0.boEyeToCam = !maid.body0.boEyeToCam;
-
-                    eyeToCam_turnSec = UnityEngine.Random.Range(6, 10);  //6~10秒ごとに変える
-                }
-            }
-
-
-            /// <summary>
-            /// 顔の向き更新
-            /// 6~10秒ごとにカメラを向くorそっぽ向く
-            /// </summary>
-            public void update_headToCam()
-            {
-                if (headToCam_state == EyeHeadToCamState.No)
-                {
-                    maid.body0.boHeadToCam = false;
-                    return;
-                }
-                else if (headToCam_state == EyeHeadToCamState.Yes)
-                {
-                    maid.body0.boHeadToCam = true;
-                    return;
-                }
-                else if (headToCam_state == EyeHeadToCamState.Auto)
-                {
-                    headToCam_turnSec -= Time.deltaTime;
-                    if (headToCam_turnSec > 0) return;
-
-                    if (maid.body0.boHeadToCam)
+                    bool flag2 = this.eyeToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Yes;
+                    if (flag2)
                     {
-                        if (UnityEngine.Random.Range(0, 100) < 70) maid.body0.boHeadToCam = !maid.body0.boHeadToCam;
+                        this.maid.body0.boEyeToCam = true;
                     }
                     else
                     {
-                        if (UnityEngine.Random.Range(0, 100) < 30) maid.body0.boHeadToCam = !maid.body0.boHeadToCam;
+                        bool flag3 = this.eyeToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                        if (flag3)
+                        {
+                            this.eyeToCam_turnSec -= Time.deltaTime;
+                            bool flag4 = this.eyeToCam_turnSec > 0f;
+                            if (!flag4)
+                            {
+                                bool flag5 = UnityEngine.Random.Range(0, 100) < 50;
+                                if (flag5)
+                                {
+                                    this.maid.body0.boEyeToCam = !this.maid.body0.boEyeToCam;
+                                }
+                                this.eyeToCam_turnSec = (float)UnityEngine.Random.Range(6, 10);
+                            }
+                        }
                     }
-
-                    headToCam_turnSec = UnityEngine.Random.Range(6, 10);  //6~10秒ごとに変える
                 }
             }
 
+            // Token: 0x0600005D RID: 93 RVA: 0x00006D40 File Offset: 0x00004F40
+            public void update_headToCam()
+            {
+                bool flag = this.headToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.No;
+                if (flag)
+                {
+                    this.maid.body0.boHeadToCam = false;
+                }
+                else
+                {
+                    bool flag2 = this.headToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Yes;
+                    if (flag2)
+                    {
+                        this.maid.body0.boHeadToCam = true;
+                    }
+                    else
+                    {
+                        bool flag3 = this.headToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                        if (flag3)
+                        {
+                            this.headToCam_turnSec -= Time.deltaTime;
+                            bool flag4 = this.headToCam_turnSec > 0f;
+                            if (!flag4)
+                            {
+                                bool boHeadToCam = this.maid.body0.boHeadToCam;
+                                if (boHeadToCam)
+                                {
+                                    bool flag5 = UnityEngine.Random.Range(0, 100) < 70;
+                                    if (flag5)
+                                    {
+                                        this.maid.body0.boHeadToCam = !this.maid.body0.boHeadToCam;
+                                    }
+                                }
+                                else
+                                {
+                                    bool flag6 = UnityEngine.Random.Range(0, 100) < 30;
+                                    if (flag6)
+                                    {
+                                        this.maid.body0.boHeadToCam = !this.maid.body0.boHeadToCam;
+                                    }
+                                }
+                                this.headToCam_turnSec = (float)UnityEngine.Random.Range(6, 10);
+                            }
+                        }
+                    }
+                }
+            }
 
+            // Token: 0x0600005E RID: 94 RVA: 0x00006E74 File Offset: 0x00005074
+            public string getMotionNameBase(string motionName)
+            {
+                bool flag = motionName == null;
+                string result;
+                if (flag)
+                {
+                    result = motionName;
+                }
+                else
+                {
+                    string text = motionName;
+                    foreach (KeyValuePair<Regex, string> keyValuePair in ScriplayPlugin.motionBaseRegexDic)
+                    {
+                        Regex key = keyValuePair.Key;
+                        text = key.Replace(text, keyValuePair.Value);
+                    }
+                    Util.debug(string.Format("getMotionNameBase {0} -> {1}", motionName, text));
+                    result = text;
+                }
+                return result;
+            }
 
+            // Token: 0x0600005F RID: 95 RVA: 0x00006F04 File Offset: 0x00005104
+            public List<string> searchMotionList(string motionNameBase, List<ScriplayPlugin.IMaid.MotionAttribute> attributeList = null)
+            {
+                List<string> list = new List<string>();
+                foreach (ScriplayPlugin.IMaid.MotionAttribute motionAttribute in attributeList)
+                {
+                    list.Add(motionAttribute.attributeStr);
+                }
+                return this.searchMotionList(motionNameBase, list);
+            }
 
+            // Token: 0x06000060 RID: 96 RVA: 0x00006F70 File Offset: 0x00005170
+            public List<string> searchMotionList(string motionName, List<string> attributeList = null)
+            {
+                string motionNameBase = this.getMotionNameBase(motionName);
+                bool flag = attributeList == null;
+                if (flag)
+                {
+                    attributeList = new List<string>();
+                }
+                List<string> list = new List<string>();
+                bool flag2 = motionNameBase == null;
+                List<string> result;
+                if (flag2)
+                {
+                    result = list;
+                }
+                else
+                {
+                    foreach (string text in ScriplayPlugin.motionNameAllList)
+                    {
+                        bool flag3 = !text.StartsWith(motionNameBase);
+                        if (!flag3)
+                        {
+                            foreach (string value in attributeList)
+                            {
+                                bool flag4 = text.Contains(value);
+                                if (flag4)
+                                {
+                                    list.Add(text);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    bool flag5 = list.Count == 0;
+                    if (flag5)
+                    {
+                        Util.info(string.Format("有効なモーションがありませんでした : {0} \r\n motionBaseName : {1}", this.maid.name, motionNameBase));
+                    }
+                    result = list;
+                }
+                return result;
+            }
+
+            // Token: 0x06000061 RID: 97 RVA: 0x00007090 File Offset: 0x00005290
+            public string getCurrentMotionName()
+            {
+                return this.maid.body0.LastAnimeFN;
+            }
+
+            // Token: 0x06000062 RID: 98 RVA: 0x000070B4 File Offset: 0x000052B4
+            public string change_Motion(string motionNameOrNameBase, bool isLoop = true, bool addQue = false, float motionSpeed = -1f, float fadeTime = -1f)
+            {
+                bool flag = motionSpeed == -1f;
+                if (flag)
+                {
+                    motionSpeed = Util.var20p(1f);
+                }
+                bool flag2 = fadeTime == -1f;
+                if (flag2)
+                {
+                    fadeTime = Util.var20p(0.8f);
+                }
+                bool flag3 = !motionNameOrNameBase.EndsWith(".anm");
+                if (flag3)
+                {
+                    motionNameOrNameBase += ".anm";
+                }
+                bool flag4 = motionNameOrNameBase == this.getCurrentMotionName();
+                string result;
+                if (flag4)
+                {
+                    result = motionNameOrNameBase;
+                }
+                else
+                {
+                    Util.animate(this.maid, motionNameOrNameBase, isLoop, fadeTime, motionSpeed, addQue);
+                    result = motionNameOrNameBase;
+                }
+                return result;
+            }
+
+            // Token: 0x06000063 RID: 99 RVA: 0x00007144 File Offset: 0x00005344
+            public string change_Motion(List<string> motionList, bool isLoop = true, bool enSelectForVibeState = true)
+            {
+                int excludeValue = motionList.IndexOf(this.getCurrentMotionName());
+                int index = Util.randomInt(0, motionList.Count - 1, excludeValue);
+                return this.change_Motion(motionList[index], isLoop, enSelectForVibeState, -1f, -1f);
+            }
+
+            // Token: 0x06000064 RID: 100 RVA: 0x0000718C File Offset: 0x0000538C
+            public string change_Motion(List<ScriplayPlugin.MotionInfo> motionList, bool isLoop = true, bool enSelectForVibeState = true)
+            {
+                List<string> list = new List<string>();
+                foreach (ScriplayPlugin.MotionInfo motionInfo in motionList)
+                {
+                    list.Add(motionInfo.motionName);
+                }
+                return this.change_Motion(list, isLoop, enSelectForVibeState);
+            }
+
+            // Token: 0x06000065 RID: 101 RVA: 0x000071F8 File Offset: 0x000053F8
+            public void change_nyo()
+            {
+                string f_strFileName = "SE011.ogg";
+                GameMain.Instance.SoundMgr.PlaySe(f_strFileName, false);
+                this.maid.AddPrefab("Particle/pNyou_cm3D2", "pNyou_cm3D2", "_IK_vagina", new Vector3(0f, -0.047f, 0.011f), new Vector3(20f, -180f, 180f));
+            }
+
+            // Token: 0x06000066 RID: 102 RVA: 0x00007264 File Offset: 0x00005464
+            public void change_sio()
+            {
+                this.maid.AddPrefab("Particle/pSio2_cm3D2", "pSio2_cm3D2", "_IK_vagina", new Vector3(0f, 0f, -0.01f), new Vector3(0f, 180f, 0f));
+            }
+
+            // Token: 0x06000067 RID: 103 RVA: 0x000072B8 File Offset: 0x000054B8
+            public void change_onceVoice(string voicename)
+            {
+                this.change_onceVoice(new List<string>
+                {
+                    voicename
+                });
+            }
+
+            // Token: 0x06000068 RID: 104 RVA: 0x000072DC File Offset: 0x000054DC
+            public void change_onceVoice(List<string> VoiceList)
+            {
+                this._playVoice(VoiceList.ToArray(), false, -1, -1);
+            }
+
+            // Token: 0x06000069 RID: 105 RVA: 0x000072EF File Offset: 0x000054EF
+            public void change_LoopVoice(List<string> VoiceList)
+            {
+                this.currentLoopVoice = this._playVoice(VoiceList.ToArray(), true, -1, -1);
+            }
+
+            // Token: 0x0600006A RID: 106 RVA: 0x00007308 File Offset: 0x00005508
+            public void change_LoopVoice(string voicename)
+            {
+                this.change_LoopVoice(new List<string>
+                {
+                    voicename
+                });
+            }
+
+            // Token: 0x0600006B RID: 107 RVA: 0x0000732C File Offset: 0x0000552C
+            public void change_stopVoice()
+            {
+                this.maid.AudioMan.Stop();
+            }
+
+            // Token: 0x0600006C RID: 108 RVA: 0x00007340 File Offset: 0x00005540
+            private string _playVoice(string[] voiceList, bool isLoop = true, int exclusionVoiceIndex = -1, int forcedVoiceIndex = -1)
+            {
+                bool flag = voiceList.Length == 0;
+                if (flag)
+                {
+                    Util.info("VoiceListが空です");
+                    throw new ArgumentException("VoiceListが空です");
+                }
+                bool flag2 = forcedVoiceIndex == -1;
+                int num;
+                if (flag2)
+                {
+                    num = Util.randomInt(0, voiceList.Length - 1, exclusionVoiceIndex);
+                }
+                else
+                {
+                    num = forcedVoiceIndex;
+                }
+                num = Mathf.Clamp(num, 0, voiceList.Length - 1);
+                string text = voiceList[num];
+                this.maid.AudioMan.LoadPlay(text, 0f, false, isLoop);
+                string arg = isLoop ? "ループあり" : "ループなし";
+                Util.info(string.Format("ボイスを再生：{0}, {1}", text, arg));
+                return text;
+            }
+
+            // Token: 0x0600006D RID: 109 RVA: 0x000073E4 File Offset: 0x000055E4
+            public static bool VertexMorph_FromProcItem(TBody body, string sTag, float f)
+            {
+                bool flag = false;
+                bool flag2 = !body || sTag == null || sTag == "";
+                bool result;
+                if (flag2)
+                {
+                    result = false;
+                }
+                else
+                {
+                    for (int i = 0; i < body.goSlot.Count; i++)
+                    {
+                        TMorph morph = body.goSlot[i].morph;
+                        bool flag3 = morph != null;
+                        if (flag3)
+                        {
+                            bool flag4 = morph.Contains(sTag);
+                            if (flag4)
+                            {
+                                flag = true;
+                                int f_nIdx = (int)morph.hash[sTag];
+                                morph.SetBlendValues(f_nIdx, f);
+                                bool flag5 = !ScriplayPlugin.IMaid.m_NeedFixTMorphs.Contains(morph);
+                                if (flag5)
+                                {
+                                    ScriplayPlugin.IMaid.m_NeedFixTMorphs.Add(morph);
+                                }
+                            }
+                        }
+                    }
+                    result = flag;
+                }
+                return result;
+            }
+
+            // Token: 0x0600006E RID: 110 RVA: 0x000074B4 File Offset: 0x000056B4
+            public static void VertexMorph_FixBlendValues()
+            {
+                foreach (TMorph tmorph in ScriplayPlugin.IMaid.m_NeedFixTMorphs)
+                {
+                    tmorph.FixBlendValues();
+                }
+                ScriplayPlugin.IMaid.m_NeedFixTMorphs.Clear();
+            }
+
+            // Token: 0x0400007F RID: 127
+            public readonly Maid maid;
+
+            // Token: 0x04000080 RID: 128
+            public string sPersonal;
+
+            // Token: 0x04000081 RID: 129
+            public bool loopVoiceBackuped = false;
+
+            // Token: 0x04000082 RID: 130
+            public string currentLoopVoice = "";
+
+            // Token: 0x04000083 RID: 131
+            private string currentFaceAnime = "";
+
+            // Token: 0x04000084 RID: 132
+            private Regex reg_hoho = new Regex("(頬.)");
+
+            // Token: 0x04000085 RID: 133
+            private Regex reg_namida = new Regex("(涙.)");
+
+            // Token: 0x04000086 RID: 134
+            private float eyeToCam_turnSec = 0f;
+
+            // Token: 0x04000087 RID: 135
+            private float headToCam_turnSec = 0f;
+
+            // Token: 0x04000088 RID: 136
+            private ScriplayPlugin.IMaid.EyeHeadToCamState eyeToCam_state = ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+
+            // Token: 0x04000089 RID: 137
+            private ScriplayPlugin.IMaid.EyeHeadToCamState headToCam_state = ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+
+            // Token: 0x0400008A RID: 138
+            private bool currentEnableReverseFront = false;
+
+            // Token: 0x0400008B RID: 139
+            private static List<TMorph> m_NeedFixTMorphs = new List<TMorph>();
+
+            // Token: 0x0400008C RID: 140
+            public readonly int maidNo;
+
+            // Token: 0x0200000F RID: 15
+            public class EyeHeadToCamState
+            {
+                // Token: 0x06000094 RID: 148 RVA: 0x000084A2 File Offset: 0x000066A2
+                private EyeHeadToCamState(string viewStr)
+                {
+                    this.viewStr = viewStr;
+                    this.ordinal = ScriplayPlugin.IMaid.EyeHeadToCamState.nextOrdinal;
+                    ScriplayPlugin.IMaid.EyeHeadToCamState.nextOrdinal++;
+                    ScriplayPlugin.IMaid.EyeHeadToCamState.items.Add(this);
+                }
+
+                // Token: 0x040000AB RID: 171
+                private static int nextOrdinal = 0;
+
+                // Token: 0x040000AC RID: 172
+                public static readonly List<ScriplayPlugin.IMaid.EyeHeadToCamState> items = new List<ScriplayPlugin.IMaid.EyeHeadToCamState>();
+
+                // Token: 0x040000AD RID: 173
+                public readonly int ordinal;
+
+                // Token: 0x040000AE RID: 174
+                public readonly string viewStr;
+
+                // Token: 0x040000AF RID: 175
+                public static readonly ScriplayPlugin.IMaid.EyeHeadToCamState No = new ScriplayPlugin.IMaid.EyeHeadToCamState("no");
+
+                // Token: 0x040000B0 RID: 176
+                public static readonly ScriplayPlugin.IMaid.EyeHeadToCamState Auto = new ScriplayPlugin.IMaid.EyeHeadToCamState("auto");
+
+                // Token: 0x040000B1 RID: 177
+                public static readonly ScriplayPlugin.IMaid.EyeHeadToCamState Yes = new ScriplayPlugin.IMaid.EyeHeadToCamState("yes");
+            }
+
+            // Token: 0x02000010 RID: 16
             public class MotionAttribute
             {
-                //フィールド一覧
-                public readonly string attributeStr;
-                //コンストラクタ
+                // Token: 0x06000096 RID: 150 RVA: 0x00008515 File Offset: 0x00006715
                 private MotionAttribute(string viewStr)
                 {
                     this.attributeStr = viewStr;
                 }
-                //メソッド
+
+                // Token: 0x06000097 RID: 151 RVA: 0x00008528 File Offset: 0x00006728
                 public string getViewStr()
                 {
                     return this.attributeStr;
                 }
 
-                // 参照用インスタンス
-                public static readonly MotionAttribute Level1 = new MotionAttribute("_1");
-                public static readonly MotionAttribute Level2 = new MotionAttribute("_2");
-                public static readonly MotionAttribute Level3 = new MotionAttribute("_3");
-                public static readonly MotionAttribute Momi1 = new MotionAttribute("_momi_1");
-                public static readonly MotionAttribute Momi2 = new MotionAttribute("_momi_2");
-                public static readonly MotionAttribute Momi3 = new MotionAttribute("_momi_3");
+                // Token: 0x040000B2 RID: 178
+                public readonly string attributeStr;
 
-                public static readonly MotionAttribute Oku = new MotionAttribute("_oku");
-                public static readonly MotionAttribute Taiki = new MotionAttribute("_taiki");
-                public static readonly MotionAttribute Zeccyougo = new MotionAttribute("_zeccyougo");
-                public static readonly MotionAttribute Hatu3 = new MotionAttribute("_hatu_3");
+                // Token: 0x040000B3 RID: 179
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Level1 = new ScriplayPlugin.IMaid.MotionAttribute("_1");
 
-                public static readonly MotionAttribute Insert = new MotionAttribute("_in_f_once");
-                public static readonly MotionAttribute Zeccyou = new MotionAttribute("_zeccyou_f_once");
-            }
+                // Token: 0x040000B4 RID: 180
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Level2 = new ScriplayPlugin.IMaid.MotionAttribute("_2");
 
-            /// <summary>
-            /// 通常のモーション名からモーションのベースとなる名前を推定する
-            /// 例：dildo_onani_1a01_f.anm　-> dildo_onani_
-            /// </summary>
-            /// <param name="motionName"></param>
-            /// <returns></returns>
-            public string getMotionNameBase(string motionName)
-            {
-                if (motionName == null) return motionName;
-                string ret = motionName;     //_1_...　などを除去
-                foreach (KeyValuePair<Regex, string> kvp in motionBaseRegexDic)
-                {
-                    Regex regex = kvp.Key;
-                    ret = regex.Replace(ret, kvp.Value);                    //_momi_　を除去
-                }
+                // Token: 0x040000B5 RID: 181
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Level3 = new ScriplayPlugin.IMaid.MotionAttribute("_3");
 
-                Util.debug(string.Format("getMotionNameBase {0} -> {1}", motionName, ret));
-                return ret;
-            }
-            public List<string> searchMotionList(string motionNameBase, List<MotionAttribute> attributeList = null)
-            {
-                List<string> attributeStrList = new List<string>();
-                foreach (MotionAttribute ma in attributeList)
-                {
-                    attributeStrList.Add(ma.attributeStr);
-                }
-                return searchMotionList(motionNameBase, attributeStrList);
-            }
+                // Token: 0x040000B6 RID: 182
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Momi1 = new ScriplayPlugin.IMaid.MotionAttribute("_momi_1");
 
-            /// <summary>
-            /// 有効なモーション名を探す
-            /// motionNameBaseから始まるモーション名のリストを返す
-            /// attributeListを指定した場合は、いずれかのattributeを含むモーション名のリストを返す
-            /// </summary>
-            /// <param name="motionNameBase"></param>
-            /// <param name="attributeList"></param>
-            /// <returns></returns>
-            public List<string> searchMotionList(string motionName, List<string> attributeList = null)
-            {
-                string motionNameBase = getMotionNameBase(motionName);
-                if (attributeList == null) attributeList = new List<string>();
-                List<string> possibleMotionList = new List<string>();
+                // Token: 0x040000B7 RID: 183
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Momi2 = new ScriplayPlugin.IMaid.MotionAttribute("_momi_2");
 
-                if (motionNameBase == null) return possibleMotionList;
+                // Token: 0x040000B8 RID: 184
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Momi3 = new ScriplayPlugin.IMaid.MotionAttribute("_momi_3");
 
-                //motionNameAllList.FindAll(s => s.Contains(motionNameBase)).FindAll(s => s.Contains(addition));
-                foreach (string mn in motionNameAllList)
-                {
-                    if (!mn.StartsWith(motionNameBase)) continue;
+                // Token: 0x040000B9 RID: 185
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Oku = new ScriplayPlugin.IMaid.MotionAttribute("_oku");
 
-                    foreach (string addition in attributeList)
-                    {
-                        if (mn.Contains(addition))
-                        {
-                            possibleMotionList.Add(mn);
-                            break;
-                        }
-                    }
-                }
-                if (possibleMotionList.Count == 0)
-                {
-                    Util.info(string.Format("有効なモーションがありませんでした : {0} \r\n motionBaseName : {1}", this.maid.name, motionNameBase));
-                }
-                return possibleMotionList;
-            }
-            public string getCurrentMotionName()
-            {
-                return maid.body0.LastAnimeFN;      //現在のモーションを調べる
-            }
+                // Token: 0x040000BA RID: 186
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Taiki = new ScriplayPlugin.IMaid.MotionAttribute("_taiki");
 
-            /// <summary>
-            /// 指定したモーションを実行
-            /// </summary>
-            /// <param name="motionNameOrNameBase"></param>
-            /// <param name="isLoop"></param>
-            /// <param name="addQue"></param>
-            /// <param name="motionSpeed"></param>
-            /// <param name="fadeTime"></param>
-            /// <returns></returns>
-            public string change_Motion(string motionNameOrNameBase, bool isLoop = true, bool addQue = false, float motionSpeed = -1, float fadeTime = -1)
-            {
-                if (motionSpeed == -1) motionSpeed = Util.var20p(1f);
-                if (fadeTime == -1) fadeTime = Util.var20p(0.8f);
+                // Token: 0x040000BB RID: 187
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Zeccyougo = new ScriplayPlugin.IMaid.MotionAttribute("_zeccyougo");
 
-                if (!motionNameOrNameBase.EndsWith(".anm")) motionNameOrNameBase += ".anm";
-                if (motionNameOrNameBase == getCurrentMotionName()) return motionNameOrNameBase;            //現在再生しているモーションを再生しようとすると動作が不連続になるため
+                // Token: 0x040000BC RID: 188
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Hatu3 = new ScriplayPlugin.IMaid.MotionAttribute("_hatu_3");
 
-                Util.animate(maid, motionNameOrNameBase, isLoop, fadeTime, motionSpeed, addQue);
-                return motionNameOrNameBase;
-            }
-            /// <summary>
-            /// モーションリストの中から1つ選んで実行
-            /// ただし、現在実行中のモーションは選択しない
-            /// </summary>
-            /// <param name="motionList"></param>
-            /// <param name="isLoop"></param>
-            /// <returns></returns>
-            public string change_Motion(List<string> motionList, bool isLoop = true, bool enSelectForVibeState = true)
-            {
-                int currentIndex = motionList.IndexOf(getCurrentMotionName());   //見つからないとき-1
-                int randomIndex = Util.randomInt(0, motionList.Count - 1, currentIndex);
-                return change_Motion(motionList[randomIndex], isLoop, enSelectForVibeState);
-            }
-            public string change_Motion(List<MotionInfo> motionList, bool isLoop = true, bool enSelectForVibeState = true)
-            {
-                List<string> list = new List<string>();
-                foreach (MotionInfo mi in motionList)
-                {
-                    list.Add(mi.motionName);
-                }
-                return change_Motion(list, isLoop, enSelectForVibeState);
-            }
+                // Token: 0x040000BD RID: 189
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Insert = new ScriplayPlugin.IMaid.MotionAttribute("_in_f_once");
 
-
-
-
-            public void change_nyo()
-            {
-                string nyoSound = "SE011.ogg";
-                GameMain.Instance.SoundMgr.PlaySe(nyoSound, false);
-                maid.AddPrefab("Particle/pNyou_cm3D2", "pNyou_cm3D2", "_IK_vagina", new Vector3(0f, -0.047f, 0.011f), new Vector3(20.0f, -180.0f, 180.0f));
-            }
-
-            public void change_sio()
-            {
-                maid.AddPrefab("Particle/pSio2_cm3D2", "pSio2_cm3D2", "_IK_vagina", new Vector3(0f, 0f, -0.01f), new Vector3(0f, 180.0f, 0f));
-            }
-            public void change_onceVoice(string voicename)
-            {
-                List<string> VoiceList = new List<string>();
-                VoiceList.Add(voicename);
-                change_onceVoice(VoiceList);
-            }
-            public void change_onceVoice(List<string> VoiceList)
-            {
-                _playVoice(VoiceList.ToArray(), false);
-            }
-
-
-            /// <summary>
-            /// 繰り返し再生するボイスの変更
-            /// </summary>
-            /// <param name="VoiceList"></param>
-            public void change_LoopVoice(List<string> VoiceList)
-            {
-
-                currentLoopVoice = _playVoice(VoiceList.ToArray(), isLoop: true);
-            }
-
-            public void change_LoopVoice(string voicename)
-            {
-                List<string> list = new List<string>();
-                list.Add(voicename);
-                change_LoopVoice(list);
-            }
-            public void change_stopVoice()
-            {
-                maid.AudioMan.Stop();
-            }
-
-
-            /// <summary>
-            /// ボイスリストからボイス１つを選んで再生
-            /// </summary>
-            /// <param name="voiceList"></param>
-            /// <param name="maid">ボイスを再生するメイド</param>
-            /// <param name="isLoop">ボイスをループするか</param>
-            /// <param name="exclusionVoiceIndex">再生しないボイスNo.</param>
-            /// <param name="forcedVoiceIndex">再生ボイスNo.を直接指定</param>
-            /// <returns>再生したボイスファイル名</returns>
-            private string _playVoice(string[] voiceList, bool isLoop = true, int exclusionVoiceIndex = -1, int forcedVoiceIndex = -1)
-            {
-                if (voiceList.Length == 0)
-                {
-                    Util.info("VoiceListが空です");
-                    throw new ArgumentException("VoiceListが空です");
-                }
-
-                int voiceIndex;
-                if (forcedVoiceIndex == -1)   //明示的にボイスNo指定してないとき
-                {
-                    //特定数を除外して、再生するボイスNo.をランダムに生成
-                    voiceIndex = Util.randomInt(0, voiceList.Length - 1, exclusionVoiceIndex);
-                }
-                else
-                {
-                    voiceIndex = forcedVoiceIndex;
-                }
-                voiceIndex = (int)Mathf.Clamp(voiceIndex, 0, voiceList.Length - 1);        //voiceIndexは配列の指数なので 0以上・サイズ-1以下    
-                string playVoice = voiceList[voiceIndex];
-                maid.AudioMan.LoadPlay(playVoice, 0f, false, isLoop);
-                string loopStr = isLoop ? "ループあり" : "ループなし";
-                Util.info(string.Format("ボイスを再生：{0}, {1}", playVoice, loopStr));
-                return playVoice;
-            }
-
-
-
-            private bool currentEnableReverseFront = false;
-
-            static List<TMorph> m_NeedFixTMorphs = new List<TMorph>();
-
-            public readonly int maidNo;
-
-            //シェイプキー操作
-            //戻り値はsTagの存在有無
-            static public bool VertexMorph_FromProcItem(TBody body, string sTag, float f)
-            {
-                bool bRes = false;
-
-                if (!body || sTag == null || sTag == "")
-                    return false;
-
-                for (int i = 0; i < body.goSlot.Count; i++)
-                {
-                    TMorph morph = body.goSlot[i].morph;
-                    if (morph != null)
-                    {
-                        if (morph.Contains(sTag))
-                        {
-                            /*if (i == 1)
-                            {
-                                bFace = true;
-                            }*/
-                            bRes = true;
-                            int h = (int)morph.hash[sTag];
-                            //morph.BlendValues[h] = f;
-                            morph.SetBlendValues(h, f);
-                            //後でまとめて更新する
-                            //body.goSlot[i].morph.FixBlendValues();
-
-                            //更新リストに追加
-                            if (!m_NeedFixTMorphs.Contains(morph))
-                                m_NeedFixTMorphs.Add(morph);
-                        }
-                    }
-                }
-                return bRes;
-            }
-
-            //シェイプキー操作Fix(基本はUpdate等の最後に一度呼ぶだけで良いはず）
-            static public void VertexMorph_FixBlendValues()
-            {
-                foreach (TMorph tm in m_NeedFixTMorphs)
-                {
-                    tm.FixBlendValues();
-                }
-
-                m_NeedFixTMorphs.Clear();
+                // Token: 0x040000BE RID: 190
+                public static readonly ScriplayPlugin.IMaid.MotionAttribute Zeccyou = new ScriplayPlugin.IMaid.MotionAttribute("_zeccyou_f_once");
             }
         }
 
+        // Token: 0x02000007 RID: 7
         public class IMan
         {
-            readonly Maid maid;
-
+            // Token: 0x06000070 RID: 112 RVA: 0x00007524 File Offset: 0x00005724
             public IMan(Maid maid)
             {
                 this.maid = maid;
             }
 
+            // Token: 0x0400008D RID: 141
+            private readonly Maid maid;
         }
 
-
-
-        /// <summary>
-        /// 性格リスト
-        /// </summary>
+        // Token: 0x02000008 RID: 8
         public sealed class PersonnalList
         {
-            static readonly string[] uniqueName = new string[] { "Pure", "Pride", "Cool", "Yandere", "Anesan", "Genki", "Sadist", "Muku", "Majime", "Rindere", "dummy_noSelected" };
-            static readonly string[] viewName = new string[] { "純真", "ツンデレ", "クーデレ", "ヤンデレ", "姉ちゃん", "僕っ娘", "ドＳ", "無垢", "真面目", "凛デレ", "指定無" };
+            // Token: 0x06000071 RID: 113 RVA: 0x00007538 File Offset: 0x00005738
             public static string getUniqueName(int index)
             {
-                if (index > uniqueName.Length - 1) throw new ArgumentException(string.Format("性格が見つかりませんでした。　PersonalList : 指数：{0}", index));
-                return uniqueName[index];
+                bool flag = index > ScriplayPlugin.PersonnalList.uniqueName.Length - 1;
+                if (flag)
+                {
+                    throw new ArgumentException(string.Format("性格が見つかりませんでした。\u3000PersonalList : 指数：{0}", index));
+                }
+                return ScriplayPlugin.PersonnalList.uniqueName[index];
             }
+
+            // Token: 0x06000072 RID: 114 RVA: 0x00007578 File Offset: 0x00005778
             public static string getViewName(int index)
             {
-                if (index > viewName.Length - 1) throw new ArgumentException(string.Format("性格が見つかりませんでした。　PersonalList : 指数：{0}", index));
-                return viewName[index];
+                bool flag = index > ScriplayPlugin.PersonnalList.viewName.Length - 1;
+                if (flag)
+                {
+                    throw new ArgumentException(string.Format("性格が見つかりませんでした。\u3000PersonalList : 指数：{0}", index));
+                }
+                return ScriplayPlugin.PersonnalList.viewName[index];
             }
+
+            // Token: 0x06000073 RID: 115 RVA: 0x000075B8 File Offset: 0x000057B8
             public static int uniqueNameListLength()
             {
-                return uniqueName.Length;
+                return ScriplayPlugin.PersonnalList.uniqueName.Length;
             }
+
+            // Token: 0x06000074 RID: 116 RVA: 0x000075D4 File Offset: 0x000057D4
             public static int viewNameListLength()
             {
-                return viewName.Length;
+                return ScriplayPlugin.PersonnalList.viewName.Length;
             }
 
+            // Token: 0x06000075 RID: 117 RVA: 0x000075F0 File Offset: 0x000057F0
             internal static int uniqueNameIndexOf(string v)
             {
-                return Array.IndexOf(uniqueName, v);
+                return Array.IndexOf<string>(ScriplayPlugin.PersonnalList.uniqueName, v);
             }
+
+            // Token: 0x0400008E RID: 142
+            private static readonly string[] uniqueName = new string[]
+            {
+                "Pure",
+                "Pride",
+                "Cool",
+                "Yandere",
+                "Anesan",
+                "Genki",
+                "Sadist",
+                "Muku",
+                "Majime",
+                "Rindere",
+                "dummy_noSelected"
+            };
+
+            // Token: 0x0400008F RID: 143
+            private static readonly string[] viewName = new string[]
+            {
+                "純真",
+                "ツンデレ",
+                "クーデレ",
+                "ヤンデレ",
+                "姉ちゃん",
+                "僕っ娘",
+                "ドＳ",
+                "無垢",
+                "真面目",
+                "凛デレ",
+                "指定無"
+            };
         }
 
-        public static VoiceTable OnceVoiceTable = new VoiceTable("OnceVoice");
-        public static VoiceTable LoopVoiceTable = new VoiceTable("LoopVoice");
-
-
-        /// <summary>
-        /// １回orループ発声するボイスのテーブル
-        /// 「oncevoice_」or「loopvoice_」から始まる複数のcsvからボイス一覧を読込み、
-        /// 条件に合うボイスをフィルタリングして取得
-        /// </summary>
+        // Token: 0x02000009 RID: 9
         public class VoiceTable
         {
-            public class ColItem
-            {
-                private static int nextOrdinal = 0;
-                public static readonly List<ColItem> items = new List<ColItem>();
-                //フィールド一覧
-                public readonly string colName;
-                public readonly string typeStr;
-                public readonly int ordinal;            //このEnumのインスタンス順序
-                public readonly int colNo;              //csvファイルの何列目に相当するか 0：２列目（1列目はCSV読み込み時に読み飛ばすため）
-                public static int maxColNo = 0;
-                //コンストラクタ
-                private ColItem(int colNo, string colName, string typeStr)
-                {
-                    this.colName = colName;
-                    this.typeStr = typeStr;
-                    this.ordinal = nextOrdinal;
-                    nextOrdinal++;
-                    this.colNo = colNo;
-                    items.Add(this);
-                    if (maxColNo < colNo) maxColNo = colNo;
-                }
-                // 参照用インスタンス
-                //public static readonly ColItem RecordName = new ColItem(0, "レコード名", "System.String");       //1列目はレコード名、読み込まない
-                public static readonly ColItem Personal = new ColItem(1, "性格", "System.String");
-                public static readonly ColItem Category = new ColItem(2, "カテゴリ", "System.String");
-                public static readonly ColItem FileName = new ColItem(3, "ボイスファイル名", "System.String");
-            }
-
-            /// <summary>
-            /// 複数のボイステーブルを保持するデータ構造（エクセルブック相当）
-            /// 性格・カテゴリ名をテーブル名として、複数のテーブルを持つ
-            /// </summary>
-            private DataSet voiceDataSet = new DataSet();
-
-            /// <summary>
-            /// 全カテゴリ名一覧
-            /// </summary>
-            private HashSet<string> categorySet = new HashSet<string>();
-            public readonly string voiceType;
-
+            // Token: 0x06000078 RID: 120 RVA: 0x000076F1 File Offset: 0x000058F1
             public VoiceTable(string voiceType)
             {
                 this.voiceType = voiceType;
             }
 
+            // Token: 0x06000079 RID: 121 RVA: 0x00007718 File Offset: 0x00005918
             public void init()
             {
-                voiceDataSet = new DataSet();
+                this.voiceDataSet = new DataSet();
             }
 
-            /// <summary>
-            /// DataSetに新規シートを追加
-            /// </summary>
-            /// <param name="sheetName"></param>
-            /// <returns></returns>
+            // Token: 0x0600007A RID: 122 RVA: 0x00007728 File Offset: 0x00005928
             private DataTable addNewDataTable(string sheetName)
             {
-                DataTable ret = new DataTable(sheetName);
-                voiceDataSet.Tables.Add(ret);
-                // カラム名の追加
-                foreach (ColItem c in ColItem.items)
+                DataTable dataTable = new DataTable(sheetName);
+                this.voiceDataSet.Tables.Add(dataTable);
+                foreach (ScriplayPlugin.VoiceTable.ColItem colItem in ScriplayPlugin.VoiceTable.ColItem.items)
                 {
-                    ret.Columns.Add(c.colName, Type.GetType(c.typeStr));
+                    dataTable.Columns.Add(colItem.colName, Type.GetType(colItem.typeStr));
                 }
-                return ret;
+                return dataTable;
             }
 
-            /// <summary>
-            /// CSVから読み込んでテーブルへ追加
-            /// </summary>
-            /// <param name="csvContent"></param>
-            /// <param name="filename"></param>
+            // Token: 0x0600007B RID: 123 RVA: 0x000077B4 File Offset: 0x000059B4
             public void parse(string[][] csvContent, string filename = "")
             {
-                foreach (string[] row in csvContent)
+                foreach (string[] array in csvContent)
                 {
-                    if (row.Length - 1 < ColItem.maxColNo) continue;
-
-                    string category = row[ColItem.Category.colNo];
-                    string sPersonal = row[ColItem.Personal.colNo];
-                    string sheetName = getUniqueSheetName(sPersonal, category);
-                    if (!voiceDataSet.Tables.Contains(sheetName))
+                    bool flag = array.Length - 1 < ScriplayPlugin.VoiceTable.ColItem.maxColNo;
+                    if (!flag)
                     {
-                        categorySet.Add(sheetName);
-                        addNewDataTable(sheetName);
-                    }
-                    DataRow dr = voiceDataSet.Tables[sheetName].NewRow();
-                    foreach (ColItem ovc in ColItem.items)
-                    {
-                        if (ovc.typeStr == "System.Boolean")
+                        string category = array[ScriplayPlugin.VoiceTable.ColItem.Category.colNo];
+                        string sPersonal = array[ScriplayPlugin.VoiceTable.ColItem.Personal.colNo];
+                        string uniqueSheetName = this.getUniqueSheetName(sPersonal, category);
+                        bool flag2 = !this.voiceDataSet.Tables.Contains(uniqueSheetName);
+                        if (flag2)
                         {
-                            dr[ovc.colName] = (int.Parse(row[ovc.colNo]) != 0); //0ならfalseとして解釈
+                            this.categorySet.Add(uniqueSheetName);
+                            this.addNewDataTable(uniqueSheetName);
                         }
-                        else
+                        DataRow dataRow = this.voiceDataSet.Tables[uniqueSheetName].NewRow();
+                        foreach (ScriplayPlugin.VoiceTable.ColItem colItem in ScriplayPlugin.VoiceTable.ColItem.items)
                         {
-                            dr[ovc.colName] = row[ovc.colNo];
+                            bool flag3 = colItem.typeStr == "System.Boolean";
+                            if (flag3)
+                            {
+                                dataRow[colItem.colName] = (int.Parse(array[colItem.colNo]) != 0);
+                            }
+                            else
+                            {
+                                dataRow[colItem.colName] = array[colItem.colNo];
+                            }
                         }
+                        this.voiceDataSet.Tables[uniqueSheetName].Rows.Add(dataRow);
                     }
-                    //カテゴリ名ごとにDataTableを追加
-                    voiceDataSet.Tables[sheetName].Rows.Add(dr);
                 }
             }
 
-            /// <summary>
-            /// 性格・カテゴリ文字列からシート名を生成
-            /// （シート名の命名規則）
-            /// </summary>
-            /// <param name="sPersonal"></param>
-            /// <param name="category"></param>
-            /// <returns></returns>
+            // Token: 0x0600007C RID: 124 RVA: 0x00007928 File Offset: 0x00005B28
             public string getUniqueSheetName(string sPersonal, string category)
             {
                 return sPersonal + "_" + category;
             }
 
-            /// <summary>
-            /// 条件に一致するファイル名のリストを返す
-            /// </summary>
-            /// <param name="category"></param>
-            /// <returns></returns>
+            // Token: 0x0600007D RID: 125 RVA: 0x00007948 File Offset: 0x00005B48
             public List<string> queryTable(string sPersonal, string category)
             {
-                List<string> ret = new List<string>();
-                string sheetName = getUniqueSheetName(sPersonal, category);
-                if (!voiceDataSet.Tables.Contains(sheetName))
+                List<string> list = new List<string>();
+                string uniqueSheetName = this.getUniqueSheetName(sPersonal, category);
+                bool flag = !this.voiceDataSet.Tables.Contains(uniqueSheetName);
+                List<string> result;
+                if (flag)
                 {
-                    Util.info(string.Format("{0}テーブルから「{1}」という名前の性格・カテゴリは見つかりませんでした", voiceType, sheetName));
-                    return ret;
+                    Util.info(string.Format("{0}テーブルから「{1}」という名前の性格・カテゴリは見つかりませんでした", this.voiceType, uniqueSheetName));
+                    result = list;
                 }
-                //DataSetから指定カテゴリのテーブルを取得
-                foreach (DataRow dr in voiceDataSet.Tables[sheetName].Rows)
+                else
                 {
-                    ret.Add(dr[ColItem.FileName.ordinal].ToString());
+                    foreach (object obj in this.voiceDataSet.Tables[uniqueSheetName].Rows)
+                    {
+                        DataRow dataRow = (DataRow)obj;
+                        list.Add(dataRow[ScriplayPlugin.VoiceTable.ColItem.FileName.ordinal].ToString());
+                    }
+                    bool flag2 = list.Count == 0;
+                    if (flag2)
+                    {
+                        Util.info(string.Format("{0}テーブルから「{1}」という名前の性格・カテゴリは見つかりませんでした", this.voiceType, uniqueSheetName));
+                    }
+                    result = list;
                 }
-                if (ret.Count == 0)
-                {
-                    Util.info(string.Format("{0}テーブルから「{1}」という名前の性格・カテゴリは見つかりませんでした", voiceType, sheetName));
-                }
-                return ret;
+                return result;
             }
-        }
 
-        public class MotionInfo
-        {
-            public string category = "";
-            public bool FrontReverse;   //前後反転するか？  0:false
-            public float AzimuthAngle;     //X方向回転角度
-            public float DeltaY;           //Y方向オフセット
-            public string MaidState;
-            public bool EnMotionChange;
-            public string motionName = "";
-        }
-        /// <summary>
-        /// モーションのテーブル
-        /// csvからモーション一覧を読込み、
-        /// 条件に合うモーションをフィルタリングして取得
-        /// </summary>
-        public class MotionTable
-        {
+            // Token: 0x04000090 RID: 144
+            private DataSet voiceDataSet = new DataSet();
+
+            // Token: 0x04000091 RID: 145
+            private HashSet<string> categorySet = new HashSet<string>();
+
+            // Token: 0x04000092 RID: 146
+            public readonly string voiceType;
+
+            // Token: 0x02000011 RID: 17
             public class ColItem
             {
-                private static int nextOrdinal = 0;
-                public static List<ColItem> items = new List<ColItem>();
-                //フィールド一覧
-                public readonly string colName;
-                public readonly string typeStr;
-                public readonly int ordinal;            //このEnumのインスタンス順序
-                public readonly int colNo;              //csvファイルの何列目に相当するか 0：２列目（1列目はCSV読み込み時に読み飛ばすため）
-                public static int maxColNo = 0;
-                //コンストラクタ
+                // Token: 0x06000099 RID: 153 RVA: 0x00008604 File Offset: 0x00006804
                 private ColItem(int colNo, string colName, string typeStr)
                 {
                     this.colName = colName;
                     this.typeStr = typeStr;
-                    this.ordinal = nextOrdinal;
-                    nextOrdinal++;
+                    this.ordinal = ScriplayPlugin.VoiceTable.ColItem.nextOrdinal;
+                    ScriplayPlugin.VoiceTable.ColItem.nextOrdinal++;
                     this.colNo = colNo;
-                    items.Add(this);
-                    if (maxColNo < colNo) maxColNo = colNo;
+                    ScriplayPlugin.VoiceTable.ColItem.items.Add(this);
+                    bool flag = ScriplayPlugin.VoiceTable.ColItem.maxColNo < colNo;
+                    if (flag)
+                    {
+                        ScriplayPlugin.VoiceTable.ColItem.maxColNo = colNo;
+                    }
                 }
-                // 参照用インスタンス
-                //public static readonly ColItem RecordName = new ColItem(0, "レコード名", "System.String");       //1列目はレコード名、読み込まない
-                public static readonly ColItem Category = new ColItem(1, "カテゴリ", "System.String");
-                public static readonly ColItem FrontReverse = new ColItem(2, "正面反転？", "System.Boolean");
-                public static readonly ColItem AzimuthAngle = new ColItem(3, "横回転角度", "System.Double");
-                public static readonly ColItem DeltaY = new ColItem(4, "Y軸位置", "System.Double");
-                public static readonly ColItem MaidState = new ColItem(5, "メイド状態", "System.String");
-                public static readonly ColItem EnMotionChange = new ColItem(6, "モーション変更許可", "System.Boolean");
-                public static readonly ColItem MotionName = new ColItem(7, "モーションファイル名", "System.String");
+
+                // Token: 0x040000BF RID: 191
+                private static int nextOrdinal = 0;
+
+                // Token: 0x040000C0 RID: 192
+                public static readonly List<ScriplayPlugin.VoiceTable.ColItem> items = new List<ScriplayPlugin.VoiceTable.ColItem>();
+
+                // Token: 0x040000C1 RID: 193
+                public readonly string colName;
+
+                // Token: 0x040000C2 RID: 194
+                public readonly string typeStr;
+
+                // Token: 0x040000C3 RID: 195
+                public readonly int ordinal;
+
+                // Token: 0x040000C4 RID: 196
+                public readonly int colNo;
+
+                // Token: 0x040000C5 RID: 197
+                public static int maxColNo = 0;
+
+                // Token: 0x040000C6 RID: 198
+                public static readonly ScriplayPlugin.VoiceTable.ColItem Personal = new ScriplayPlugin.VoiceTable.ColItem(1, "性格", "System.String");
+
+                // Token: 0x040000C7 RID: 199
+                public static readonly ScriplayPlugin.VoiceTable.ColItem Category = new ScriplayPlugin.VoiceTable.ColItem(2, "カテゴリ", "System.String");
+
+                // Token: 0x040000C8 RID: 200
+                public static readonly ScriplayPlugin.VoiceTable.ColItem FileName = new ScriplayPlugin.VoiceTable.ColItem(3, "ボイスファイル名", "System.String");
             }
+        }
 
-            private static DataTable motionTable = new DataTable("Motion");
+        // Token: 0x0200000A RID: 10
+        public class MotionInfo
+        {
+            // Token: 0x04000093 RID: 147
+            public string category = "";
 
+            // Token: 0x04000094 RID: 148
+            public bool FrontReverse;
+
+            // Token: 0x04000095 RID: 149
+            public float AzimuthAngle;
+
+            // Token: 0x04000096 RID: 150
+            public float DeltaY;
+
+            // Token: 0x04000097 RID: 151
+            public string MaidState;
+
+            // Token: 0x04000098 RID: 152
+            public bool EnMotionChange;
+
+            // Token: 0x04000099 RID: 153
+            public string motionName = "";
+        }
+
+        // Token: 0x0200000B RID: 11
+        public class MotionTable
+        {
+            // Token: 0x0600007F RID: 127 RVA: 0x00007A68 File Offset: 0x00005C68
             public static void init()
             {
-                motionTable = new DataTable("Motion");
-                // カラム名の追加
-                foreach (ColItem c in ColItem.items)
+                ScriplayPlugin.MotionTable.motionTable = new DataTable("Motion");
+                foreach (ScriplayPlugin.MotionTable.ColItem colItem in ScriplayPlugin.MotionTable.ColItem.items)
                 {
-                    motionTable.Columns.Add(c.colName, Type.GetType(c.typeStr));
+                    ScriplayPlugin.MotionTable.motionTable.Columns.Add(colItem.colName, Type.GetType(colItem.typeStr));
                 }
             }
 
-
-            /// <summary>
-            /// CSVから読み込んでテーブルへ追加
-            /// </summary>
-            /// <param name="csvContent"></param>
-            /// <param name="filename"></param>
+            // Token: 0x06000080 RID: 128 RVA: 0x00007AE8 File Offset: 0x00005CE8
             public static void parse(string[][] csvContent, string filename = "")
             {
-                //string categoryname = filename.Replace(cfg.loopVoicePrefix, "").Replace(".csv", "").Replace(".CSV", "");
-                foreach (string[] row in csvContent)
+                foreach (string[] array in csvContent)
                 {
-                    if (row.Length - 1 < ColItem.maxColNo) continue;
-
-                    DataRow dr = motionTable.NewRow();
-                    foreach (ColItem ovc in ColItem.items)
+                    bool flag = array.Length - 1 < ScriplayPlugin.MotionTable.ColItem.maxColNo;
+                    if (!flag)
                     {
-                        if (ovc.typeStr == "System.Boolean")
+                        DataRow dataRow = ScriplayPlugin.MotionTable.motionTable.NewRow();
+                        foreach (ScriplayPlugin.MotionTable.ColItem colItem in ScriplayPlugin.MotionTable.ColItem.items)
                         {
-                            dr[ovc.colName] = (int.Parse(row[ovc.colNo]) != 0); //0ならfalseとして解釈
+                            bool flag2 = colItem.typeStr == "System.Boolean";
+                            if (flag2)
+                            {
+                                dataRow[colItem.colName] = (int.Parse(array[colItem.colNo]) != 0);
+                            }
+                            else
+                            {
+                                dataRow[colItem.colName] = array[colItem.colNo];
+                            }
                         }
-                        else
-                        {
-                            dr[ovc.colName] = row[ovc.colNo];
-                        }
+                        ScriplayPlugin.MotionTable.motionTable.Rows.Add(dataRow);
                     }
-                    motionTable.Rows.Add(dr);
                 }
             }
 
-
-            /// <summary>
-            /// 条件に一致するモーション情報のリストを返す
-            /// モーション名はベース部分のみの項目もある。
-            /// </summary>
-            /// <param name="personal"></param>
-            /// <param name="category"></param>
-            /// <param name="maidState"></param>
-            /// <param name="feelMin"></param>
-            /// <param name="feelMax"></param>
-            /// <returns></returns>
-            public static List<MotionInfo> queryTable_motionNameBase(string category, string maidState = "-") // int feelMin = 0, int feelMax = 3)
+            // Token: 0x06000081 RID: 129 RVA: 0x00007BE4 File Offset: 0x00005DE4
+            public static List<ScriplayPlugin.MotionInfo> queryTable_motionNameBase(string category, string maidState = "-")
             {
-                // Selectメソッドを使ってデータを抽出
-                List<MotionInfo> ret = query(category, maidState);
-                if (ret.Count == 0)
+                List<ScriplayPlugin.MotionInfo> list = ScriplayPlugin.MotionTable.query(category, maidState, "MotionTable 検索");
+                bool flag = list.Count == 0;
+                if (flag)
                 {
-                    //Util.info(string.Format("MaidState「{0}」のMotionが見つからなかったのでデフォルトMaidStateのモーションを探します", maidState));
-                    ret = query(category, "-", "MotionTable　再検索　MaidState「デフォルト」");
+                    list = ScriplayPlugin.MotionTable.query(category, "-", "MotionTable\u3000再検索\u3000MaidState「デフォルト」");
                 }
-                //Util.debug(string.Format("Motionクエリ結果\r\n カテゴリ:{0},MaidState:{1}\r\n{2}",
-                //    category, maidState, Util.list2Str(ret)));
-                return ret;
+                return list;
             }
-            private static List<MotionInfo> query(string category, string maidState = "-", string comment = "MotionTable 検索")
+
+            // Token: 0x06000082 RID: 130 RVA: 0x00007C24 File Offset: 0x00005E24
+            private static List<ScriplayPlugin.MotionInfo> query(string category, string maidState = "-", string comment = "MotionTable 検索")
             {
-                string query = createCondition(category, maidState);
-                DataRow[] dRows = motionTable.Select(query);
-                List<MotionInfo> ret = new List<MotionInfo>();
-                foreach (DataRow dr in dRows)
+                string text = ScriplayPlugin.MotionTable.createCondition(category, maidState);
+                DataRow[] array = ScriplayPlugin.MotionTable.motionTable.Select(text);
+                List<ScriplayPlugin.MotionInfo> list = new List<ScriplayPlugin.MotionInfo>();
+                foreach (DataRow dataRow in array)
                 {
                     try
                     {
-                        MotionInfo mi = new MotionInfo();
-                        mi.category = dr[ColItem.Category.ordinal].ToString();
-                        mi.motionName = dr[ColItem.MotionName.ordinal].ToString();
-                        mi.DeltaY = float.Parse(dr[ColItem.DeltaY.ordinal].ToString());
-                        mi.AzimuthAngle = float.Parse(dr[ColItem.AzimuthAngle.ordinal].ToString());
-                        mi.EnMotionChange = bool.Parse(dr[ColItem.EnMotionChange.ordinal].ToString());
-                        mi.FrontReverse = bool.Parse(dr[ColItem.FrontReverse.ordinal].ToString());
-                        ret.Add(mi);
+                        list.Add(new ScriplayPlugin.MotionInfo
+                        {
+                            category = dataRow[ScriplayPlugin.MotionTable.ColItem.Category.ordinal].ToString(),
+                            motionName = dataRow[ScriplayPlugin.MotionTable.ColItem.MotionName.ordinal].ToString(),
+                            DeltaY = float.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.DeltaY.ordinal].ToString()),
+                            AzimuthAngle = float.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.AzimuthAngle.ordinal].ToString()),
+                            EnMotionChange = bool.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.EnMotionChange.ordinal].ToString()),
+                            FrontReverse = bool.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.FrontReverse.ordinal].ToString())
+                        });
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        Util.debug(string.Format("MotionTableから読み出し失敗:{0} \r\n エラー内容 : {1}", dr.ToString(), e.StackTrace));
+                        Util.debug(string.Format("MotionTableから読み出し失敗:{0} \r\n エラー内容 : {1}", dataRow.ToString(), ex.StackTrace));
                     }
                 }
-                Util.debug(string.Format("{0}\r\n  {1}\r\n  検索結果\r\n  {2}", comment, query, Util.list2Str(ret)));
-                return ret;
+                Util.debug(string.Format("{0}\r\n  {1}\r\n  検索結果\r\n  {2}", comment, text, Util.list2Str<ScriplayPlugin.MotionInfo>(list)));
+                return list;
             }
-            private static string createCondition(string category, string maidState = "-") // int feelMin = 0, int feelMax = 3)
+
+            // Token: 0x06000083 RID: 131 RVA: 0x00007D98 File Offset: 0x00005F98
+            private static string createCondition(string category, string maidState = "-")
             {
-                StringBuilder condition = new StringBuilder();
-                condition.Append(string.Format(" {0} = '{1}'", ColItem.Category.colName, category));
-                if (maidState != "-")
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(string.Format(" {0} = '{1}'", ScriplayPlugin.MotionTable.ColItem.Category.colName, category));
+                bool flag = maidState != "-";
+                if (flag)
                 {
-                    if (condition.Length != 0) condition.Append(" AND ");
-                    condition.Append(string.Format(" {0} = '{1}'", ColItem.MaidState.colName, maidState));
+                    bool flag2 = stringBuilder.Length != 0;
+                    if (flag2)
+                    {
+                        stringBuilder.Append(" AND ");
+                    }
+                    stringBuilder.Append(string.Format(" {0} = '{1}'", ScriplayPlugin.MotionTable.ColItem.MaidState.colName, maidState));
                 }
-                return condition.ToString();
+                return stringBuilder.ToString();
             }
+
+            // Token: 0x06000084 RID: 132 RVA: 0x00007E18 File Offset: 0x00006018
             public static DataTable getTable()
             {
-                return motionTable;
+                return ScriplayPlugin.MotionTable.motionTable;
             }
+
+            // Token: 0x06000085 RID: 133 RVA: 0x00007E30 File Offset: 0x00006030
             public static IEnumerable<string> getCategoryList()
             {
-                HashSet<string> ret = new HashSet<string>();
-                foreach (DataRow dr in motionTable.Rows)
+                HashSet<string> hashSet = new HashSet<string>();
+                foreach (object obj in ScriplayPlugin.MotionTable.motionTable.Rows)
                 {
-                    ret.Add((string)dr[ColItem.Category.colName]);
+                    DataRow dataRow = (DataRow)obj;
+                    hashSet.Add((string)dataRow[ScriplayPlugin.MotionTable.ColItem.Category.colName]);
                 }
-                return ret;
+                return hashSet;
             }
-        }
 
-        /// <summary>
-        /// 表情のテーブル
-        /// 「face_」から始まる複数のcsvから表情一覧を読込み。
-        /// 条件に合う表情をフィルタリングして取得
-        /// </summary>
-        public class FaceTable
-        {
+            // Token: 0x0400009A RID: 154
+            private static DataTable motionTable = new DataTable("Motion");
+
+            // Token: 0x02000012 RID: 18
             public class ColItem
             {
-                private static int nextOrdinal = 0;
-                public static List<ColItem> items = new List<ColItem>();
-                //フィールド一覧
-                public readonly string colName;
-                public readonly string typeStr;
-                public readonly int ordinal;            //このEnumのインスタンス順序
-                public readonly int colNo;              //csvファイルの何列目に相当するか 0：２列目（1列目はCSV読み込み時に読み飛ばすため）
-                public static int maxColNo = 0;
-                //コンストラクタ
+                // Token: 0x0600009B RID: 155 RVA: 0x000086C8 File Offset: 0x000068C8
                 private ColItem(int colNo, string colName, string typeStr)
                 {
                     this.colName = colName;
                     this.typeStr = typeStr;
-                    this.ordinal = nextOrdinal;
-                    nextOrdinal++;
+                    this.ordinal = ScriplayPlugin.MotionTable.ColItem.nextOrdinal;
+                    ScriplayPlugin.MotionTable.ColItem.nextOrdinal++;
                     this.colNo = colNo;
-                    items.Add(this);
-                    if (maxColNo < colNo) maxColNo = colNo;
+                    ScriplayPlugin.MotionTable.ColItem.items.Add(this);
+                    bool flag = ScriplayPlugin.MotionTable.ColItem.maxColNo < colNo;
+                    if (flag)
+                    {
+                        ScriplayPlugin.MotionTable.ColItem.maxColNo = colNo;
+                    }
                 }
-                // 参照用インスタンス
-                //public static readonly ColItem RecordName = new ColItem(0, "レコード名", "System.String");       //1列目はレコード名、読み込まない
-                public static readonly ColItem Category = new ColItem(1, "カテゴリ", "System.String");
-                public static readonly ColItem FaceName = new ColItem(2, "表情ファイル名", "System.String");
-                public static readonly ColItem Hoho = new ColItem(3, "頬", "System.Int32");
-                public static readonly ColItem Namida = new ColItem(4, "涙", "System.Int32");
-                public static readonly ColItem Yodare = new ColItem(5, "よだれ", "System.Int32");
+
+                // Token: 0x040000C9 RID: 201
+                private static int nextOrdinal = 0;
+
+                // Token: 0x040000CA RID: 202
+                public static List<ScriplayPlugin.MotionTable.ColItem> items = new List<ScriplayPlugin.MotionTable.ColItem>();
+
+                // Token: 0x040000CB RID: 203
+                public readonly string colName;
+
+                // Token: 0x040000CC RID: 204
+                public readonly string typeStr;
+
+                // Token: 0x040000CD RID: 205
+                public readonly int ordinal;
+
+                // Token: 0x040000CE RID: 206
+                public readonly int colNo;
+
+                // Token: 0x040000CF RID: 207
+                public static int maxColNo = 0;
+
+                // Token: 0x040000D0 RID: 208
+                public static readonly ScriplayPlugin.MotionTable.ColItem Category = new ScriplayPlugin.MotionTable.ColItem(1, "カテゴリ", "System.String");
+
+                // Token: 0x040000D1 RID: 209
+                public static readonly ScriplayPlugin.MotionTable.ColItem FrontReverse = new ScriplayPlugin.MotionTable.ColItem(2, "正面反転？", "System.Boolean");
+
+                // Token: 0x040000D2 RID: 210
+                public static readonly ScriplayPlugin.MotionTable.ColItem AzimuthAngle = new ScriplayPlugin.MotionTable.ColItem(3, "横回転角度", "System.Double");
+
+                // Token: 0x040000D3 RID: 211
+                public static readonly ScriplayPlugin.MotionTable.ColItem DeltaY = new ScriplayPlugin.MotionTable.ColItem(4, "Y軸位置", "System.Double");
+
+                // Token: 0x040000D4 RID: 212
+                public static readonly ScriplayPlugin.MotionTable.ColItem MaidState = new ScriplayPlugin.MotionTable.ColItem(5, "メイド状態", "System.String");
+
+                // Token: 0x040000D5 RID: 213
+                public static readonly ScriplayPlugin.MotionTable.ColItem EnMotionChange = new ScriplayPlugin.MotionTable.ColItem(6, "モーション変更許可", "System.Boolean");
+
+                // Token: 0x040000D6 RID: 214
+                public static readonly ScriplayPlugin.MotionTable.ColItem MotionName = new ScriplayPlugin.MotionTable.ColItem(7, "モーションファイル名", "System.String");
             }
+        }
 
-            /// <summary>
-            /// 複数の表情テーブルを保持するデータ構造（エクセルブック相当）
-            /// カテゴリ名をテーブル名として、複数のテーブルを持つ
-            /// </summary>
-            private static DataSet faceDataSet = new DataSet();
-
-            /// <summary>
-            /// 全カテゴリ名一覧
-            /// </summary>
-            private static HashSet<string> categorySet = new HashSet<string>();
-
+        // Token: 0x0200000C RID: 12
+        public class FaceTable
+        {
+            // Token: 0x06000088 RID: 136 RVA: 0x00007EC5 File Offset: 0x000060C5
             public static void init()
             {
-                faceDataSet = new DataSet();
+                ScriplayPlugin.FaceTable.faceDataSet = new DataSet();
             }
 
-            /// <summary>
-            /// faceDataSetに新規シートを追加
-            /// </summary>
-            /// <param name="sheetName"></param>
-            /// <returns></returns>
+            // Token: 0x06000089 RID: 137 RVA: 0x00007ED4 File Offset: 0x000060D4
             private static DataTable addNewDataTable(string sheetName)
             {
-                DataTable ret = new DataTable(sheetName);
-                faceDataSet.Tables.Add(ret);
-                // カラム名の追加
-                foreach (ColItem c in ColItem.items)
+                DataTable dataTable = new DataTable(sheetName);
+                ScriplayPlugin.FaceTable.faceDataSet.Tables.Add(dataTable);
+                foreach (ScriplayPlugin.FaceTable.ColItem colItem in ScriplayPlugin.FaceTable.ColItem.items)
                 {
-                    ret.Columns.Add(c.colName, Type.GetType(c.typeStr));
+                    dataTable.Columns.Add(colItem.colName, Type.GetType(colItem.typeStr));
                 }
-                return ret;
+                return dataTable;
             }
 
-            /// <summary>
-            /// CSVから読み込んでテーブルへ追加
-            /// </summary>
-            /// <param name="csvContent"></param>
-            /// <param name="filename"></param>
+            // Token: 0x0600008A RID: 138 RVA: 0x00007F60 File Offset: 0x00006160
             public static void parse(string[][] csvContent, string filename = "")
             {
-                foreach (string[] row in csvContent)
+                foreach (string[] array in csvContent)
                 {
-                    if (row.Length - 1 < ColItem.maxColNo) continue;
-                    string category = row[ColItem.Category.colNo];  //dr[ColItem.Category.colName].ToString();
-                    if (!faceDataSet.Tables.Contains(category))
+                    bool flag = array.Length - 1 < ScriplayPlugin.FaceTable.ColItem.maxColNo;
+                    if (!flag)
                     {
-                        categorySet.Add(category);
-                        addNewDataTable(category);
-                    }
-                    DataRow dr = faceDataSet.Tables[category].NewRow();
-                    foreach (ColItem ovc in ColItem.items)
-                    {
-                        if (ovc.typeStr == "System.Boolean")
+                        string text = array[ScriplayPlugin.FaceTable.ColItem.Category.colNo];
+                        bool flag2 = !ScriplayPlugin.FaceTable.faceDataSet.Tables.Contains(text);
+                        if (flag2)
                         {
-                            dr[ovc.colName] = (int.Parse(row[ovc.colNo]) != 0); //0ならfalseとして解釈
+                            ScriplayPlugin.FaceTable.categorySet.Add(text);
+                            ScriplayPlugin.FaceTable.addNewDataTable(text);
                         }
-                        else
+                        DataRow dataRow = ScriplayPlugin.FaceTable.faceDataSet.Tables[text].NewRow();
+                        foreach (ScriplayPlugin.FaceTable.ColItem colItem in ScriplayPlugin.FaceTable.ColItem.items)
                         {
-                            dr[ovc.colName] = row[ovc.colNo];
+                            bool flag3 = colItem.typeStr == "System.Boolean";
+                            if (flag3)
+                            {
+                                dataRow[colItem.colName] = (int.Parse(array[colItem.colNo]) != 0);
+                            }
+                            else
+                            {
+                                dataRow[colItem.colName] = array[colItem.colNo];
+                            }
                         }
+                        ScriplayPlugin.FaceTable.faceDataSet.Tables[text].Rows.Add(dataRow);
                     }
-                    //カテゴリ名ごとにDataTableを追加
-                    faceDataSet.Tables[category].Rows.Add(dr);
                 }
             }
 
-            /// <summary>
-            /// 条件に一致するファイル名のリストを返す
-            /// </summary>
-            /// <param name="category"></param>
-            /// <returns></returns>
+            // Token: 0x0600008B RID: 139 RVA: 0x000080B0 File Offset: 0x000062B0
             public static List<string> queryTable(string category)
             {
-                List<string> ret = new List<string>();
-                if (!faceDataSet.Tables.Contains(category))
+                List<string> list = new List<string>();
+                bool flag = !ScriplayPlugin.FaceTable.faceDataSet.Tables.Contains(category);
+                List<string> result;
+                if (flag)
                 {
                     Util.info(string.Format("表情テーブルから「{0}」という名前のカテゴリは見つかりませんでした", category));
-                    return ret;
+                    result = list;
                 }
-                //DataSetから指定カテゴリのテーブルを取得
-                foreach (DataRow dr in faceDataSet.Tables[category].Rows)
+                else
                 {
-                    ret.Add(dr[ColItem.FaceName.ordinal].ToString());
+                    foreach (object obj in ScriplayPlugin.FaceTable.faceDataSet.Tables[category].Rows)
+                    {
+                        DataRow dataRow = (DataRow)obj;
+                        list.Add(dataRow[ScriplayPlugin.FaceTable.ColItem.FaceName.ordinal].ToString());
+                    }
+                    bool flag2 = list.Count == 0;
+                    if (flag2)
+                    {
+                        Util.info(string.Format("表情テーブルから「{0}」という名前のカテゴリは見つかりませんでした", category));
+                    }
+                    result = list;
                 }
-                if (ret.Count == 0)
+                return result;
+            }
+
+            // Token: 0x0400009B RID: 155
+            private static DataSet faceDataSet = new DataSet();
+
+            // Token: 0x0400009C RID: 156
+            private static HashSet<string> categorySet = new HashSet<string>();
+
+            // Token: 0x02000013 RID: 19
+            public class ColItem
+            {
+                // Token: 0x0600009D RID: 157 RVA: 0x000087E0 File Offset: 0x000069E0
+                private ColItem(int colNo, string colName, string typeStr)
                 {
-                    Util.info(string.Format("表情テーブルから「{0}」という名前のカテゴリは見つかりませんでした", category));
+                    this.colName = colName;
+                    this.typeStr = typeStr;
+                    this.ordinal = ScriplayPlugin.FaceTable.ColItem.nextOrdinal;
+                    ScriplayPlugin.FaceTable.ColItem.nextOrdinal++;
+                    this.colNo = colNo;
+                    ScriplayPlugin.FaceTable.ColItem.items.Add(this);
+                    bool flag = ScriplayPlugin.FaceTable.ColItem.maxColNo < colNo;
+                    if (flag)
+                    {
+                        ScriplayPlugin.FaceTable.ColItem.maxColNo = colNo;
+                    }
                 }
-                return ret;
+
+                // Token: 0x040000D7 RID: 215
+                private static int nextOrdinal = 0;
+
+                // Token: 0x040000D8 RID: 216
+                public static List<ScriplayPlugin.FaceTable.ColItem> items = new List<ScriplayPlugin.FaceTable.ColItem>();
+
+                // Token: 0x040000D9 RID: 217
+                public readonly string colName;
+
+                // Token: 0x040000DA RID: 218
+                public readonly string typeStr;
+
+                // Token: 0x040000DB RID: 219
+                public readonly int ordinal;
+
+                // Token: 0x040000DC RID: 220
+                public readonly int colNo;
+
+                // Token: 0x040000DD RID: 221
+                public static int maxColNo = 0;
+
+                // Token: 0x040000DE RID: 222
+                public static readonly ScriplayPlugin.FaceTable.ColItem Category = new ScriplayPlugin.FaceTable.ColItem(1, "カテゴリ", "System.String");
+
+                // Token: 0x040000DF RID: 223
+                public static readonly ScriplayPlugin.FaceTable.ColItem FaceName = new ScriplayPlugin.FaceTable.ColItem(2, "表情ファイル名", "System.String");
+
+                // Token: 0x040000E0 RID: 224
+                public static readonly ScriplayPlugin.FaceTable.ColItem Hoho = new ScriplayPlugin.FaceTable.ColItem(3, "頬", "System.Int32");
+
+                // Token: 0x040000E1 RID: 225
+                public static readonly ScriplayPlugin.FaceTable.ColItem Namida = new ScriplayPlugin.FaceTable.ColItem(4, "涙", "System.Int32");
+
+                // Token: 0x040000E2 RID: 226
+                public static readonly ScriplayPlugin.FaceTable.ColItem Yodare = new ScriplayPlugin.FaceTable.ColItem(5, "よだれ", "System.Int32");
             }
         }
 
-        /// <summary>
-        /// Androidのトースト風メッセージ
-        /// </summary>
-        /// <param name="message"></param>
-        public static void toast(string message)
-        {
-            ToastUtil.Toast(ScriplayPlugin.instance, message);
-        }
-
-        /// <summary>
-        /// トースト生成用クラス
-        /// 参考：https://qiita.com/maebaru/items/23e85a8f2f1ce69482b7
-        /// </summary>
+        // Token: 0x0200000D RID: 13
         public class ToastUtil : MonoBehaviour
         {
-            public static Color imgColor = new Color(0.7f, 0.7f, 0.7f, 0.6f);
-            public static Color textColor = new Color(0.1f, 0.1f, 0.1f, 0.9f);
-            public static Vector2 startPos = new Vector2(0, -500); // 開始場所
-            public static Vector2 endPos = new Vector2(0, -300); // 終了場所
-            public static int fontSize = 20;
-            public static int moveFrame = 30; // 浮き上がりの時間(フレーム)
-            public static int waitFrame = (int)3 * 60; // 浮き上がり後の時間(フレーム)
-            public static int pad = 100; // padding
-            public static Sprite imgSprite;
-            public static Font textFont;
-
+            // Token: 0x0600008E RID: 142 RVA: 0x000081AC File Offset: 0x000063AC
             public static void Toast<T>(MonoBehaviour mb, T m)
             {
-                string msg = m.ToString();
-                GameObject g = new GameObject("ToastCanbas");
-                Canvas canvas = g.AddComponent<Canvas>();
+                string text = m.ToString();
+                GameObject gameObject = new GameObject("ToastCanbas");
+                Canvas canvas = gameObject.AddComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                canvas.sortingOrder = 100; //最前
-                g.AddComponent<CanvasScaler>();
-                g.AddComponent<GraphicRaycaster>();
-
-                GameObject g2 = new GameObject("Image");
-                g2.transform.parent = g.transform;
-                Image im = g2.AddComponent<Image>();
-                if (imgSprite) im.sprite = imgSprite;
-                im.color = imgColor;
-                g2.GetComponent<RectTransform>().anchoredPosition = startPos;
-
-                GameObject g3 = new GameObject("Text");
-                g3.transform.parent = g2.transform;
-                Text t = g3.AddComponent<Text>();
-                g3.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 0);
-
-                t.alignment = TextAnchor.MiddleCenter;
-                if (textFont)
-                    t.font = textFont;
+                canvas.sortingOrder = 100;
+                gameObject.AddComponent<CanvasScaler>();
+                gameObject.AddComponent<GraphicRaycaster>();
+                GameObject gameObject2 = new GameObject("Image");
+                gameObject2.transform.parent = gameObject.transform;
+                Image image = gameObject2.AddComponent<Image>();
+                bool flag = ScriplayPlugin.ToastUtil.imgSprite;
+                if (flag)
+                {
+                    image.sprite = ScriplayPlugin.ToastUtil.imgSprite;
+                }
+                image.color = ScriplayPlugin.ToastUtil.imgColor;
+                gameObject2.GetComponent<RectTransform>().anchoredPosition = ScriplayPlugin.ToastUtil.startPos;
+                GameObject gameObject3 = new GameObject("Text");
+                gameObject3.transform.parent = gameObject2.transform;
+                Text text2 = gameObject3.AddComponent<Text>();
+                gameObject3.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 0f);
+                text2.alignment = TextAnchor.MiddleCenter;
+                bool flag2 = ScriplayPlugin.ToastUtil.textFont;
+                if (flag2)
+                {
+                    text2.font = ScriplayPlugin.ToastUtil.textFont;
+                }
                 else
-                    t.font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
-                t.fontSize = fontSize;
-                t.text = msg;
-                t.enabled = true;
-                t.color = textColor;
-
-                g3.GetComponent<RectTransform>().sizeDelta = new Vector2(t.preferredWidth, t.preferredHeight);
-                g3.GetComponent<RectTransform>().sizeDelta = new Vector2(t.preferredWidth, t.preferredHeight);//2回必要
-                g2.GetComponent<RectTransform>().sizeDelta = new Vector2(t.preferredWidth + pad, t.preferredHeight + pad);
-
-                mb.StartCoroutine(
-                  DoToast(
-                    g2.GetComponent<RectTransform>(), (endPos - startPos) * (1f / moveFrame), g
-                  )
-                );
+                {
+                    text2.font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+                }
+                text2.fontSize = ScriplayPlugin.ToastUtil.fontSize;
+                text2.text = text;
+                text2.enabled = true;
+                text2.color = ScriplayPlugin.ToastUtil.textColor;
+                gameObject3.GetComponent<RectTransform>().sizeDelta = new Vector2(text2.preferredWidth, text2.preferredHeight);
+                gameObject3.GetComponent<RectTransform>().sizeDelta = new Vector2(text2.preferredWidth, text2.preferredHeight);
+                gameObject2.GetComponent<RectTransform>().sizeDelta = new Vector2(text2.preferredWidth + (float)ScriplayPlugin.ToastUtil.pad, text2.preferredHeight + (float)ScriplayPlugin.ToastUtil.pad);
+                mb.StartCoroutine(ScriplayPlugin.ToastUtil.DoToast(gameObject2.GetComponent<RectTransform>(), (ScriplayPlugin.ToastUtil.endPos - ScriplayPlugin.ToastUtil.startPos) * (1f / (float)ScriplayPlugin.ToastUtil.moveFrame), gameObject));
             }
-            static IEnumerator DoToast(RectTransform rec, Vector2 dif, GameObject g)
+
+            // Token: 0x0600008F RID: 143 RVA: 0x000083B2 File Offset: 0x000065B2
+            private static IEnumerator DoToast(RectTransform rec, Vector2 dif, GameObject g)
             {
-                for (var i = 1; i <= moveFrame; i++) { rec.anchoredPosition += dif; yield return null; }
-                for (var i = 1; i <= waitFrame; i++) yield return null;
-                Destroy(g);
+                int num;
+                for (int i = 1; i <= ScriplayPlugin.ToastUtil.moveFrame; i = num + 1)
+                {
+                    rec.anchoredPosition += dif;
+                    yield return null;
+                    num = i;
+                }
+                for (int j = 1; j <= ScriplayPlugin.ToastUtil.waitFrame; j = num + 1)
+                {
+                    yield return null;
+                    num = j;
+                }
+                UnityEngine.Object.Destroy(g);
+                yield break;
             }
+
+            // Token: 0x0400009D RID: 157
+            public static Color imgColor = new Color(0.7f, 0.7f, 0.7f, 0.6f);
+
+            // Token: 0x0400009E RID: 158
+            public static Color textColor = new Color(0.1f, 0.1f, 0.1f, 0.9f);
+
+            // Token: 0x0400009F RID: 159
+            public static Vector2 startPos = new Vector2(0f, -500f);
+
+            // Token: 0x040000A0 RID: 160
+            public static Vector2 endPos = new Vector2(0f, -300f);
+
+            // Token: 0x040000A1 RID: 161
+            public static int fontSize = 20;
+
+            // Token: 0x040000A2 RID: 162
+            public static int moveFrame = 30;
+
+            // Token: 0x040000A3 RID: 163
+            public static int waitFrame = 180;
+
+            // Token: 0x040000A4 RID: 164
+            public static int pad = 100;
+
+            // Token: 0x040000A5 RID: 165
+            public static Sprite imgSprite;
+
+            // Token: 0x040000A6 RID: 166
+            public static Font textFont;
         }
     }
 
+    // Token: 0x02000004 RID: 4
+    public class ScriplayContext
+    {
+        // Token: 0x06000030 RID: 48 RVA: 0x0000464C File Offset: 0x0000284C
+        private ScriplayContext(string scriptName, bool finished = false)
+        {
+            this.scriptFinished = finished;
+            this.scriptName = scriptName;
+        }
+
+        // Token: 0x17000001 RID: 1
+        // (get) Token: 0x06000031 RID: 49 RVA: 0x000046F8 File Offset: 0x000028F8
+        // (set) Token: 0x06000032 RID: 50 RVA: 0x00004710 File Offset: 0x00002910
+        public bool scriptFinished
+        {
+            get
+            {
+                return this.scriptFinished_flag;
+            }
+            set
+            {
+                this.scriptFinished_flag = value;
+                if (value)
+                {
+                    this.tearDown();
+                }
+            }
+        }
+
+        // Token: 0x06000033 RID: 51 RVA: 0x00004734 File Offset: 0x00002934
+        private void tearDown()
+        {
+            this.selection_selectionList.Clear();
+            foreach (ScriplayPlugin.IMaid maid in ScriplayPlugin.maidList)
+            {
+                maid.change_stopVoice();
+            }
+            ScriplayPlugin.change_SE("");
+        }
+
+        // Token: 0x06000034 RID: 52 RVA: 0x000047A4 File Offset: 0x000029A4
+        public static ScriplayContext readScriptFile(string scriptName, string[] scriptArray)
+        {
+            ScriplayContext scriplayContext = new ScriplayContext(scriptName, false);
+            List<string> list = new List<string>(scriptArray);
+            list.Insert(0, "");
+            scriptArray = list.ToArray();
+            scriplayContext.scriptArray = scriptArray;
+            foreach (string input in scriplayContext.scriptArray)
+            {
+                bool flag = ScriplayContext.reg_scriptInfo.IsMatch(input);
+                if (flag)
+                {
+                    Util.info("スクリプトバージョンを検出しました");
+                    break;
+                }
+            }
+            for (int j = 0; j < scriplayContext.scriptArray.Length; j++)
+            {
+                string input2 = scriplayContext.scriptArray[j];
+                bool flag2 = ScriplayContext.reg_label.IsMatch(input2);
+                if (flag2)
+                {
+                    Match match = ScriplayContext.reg_label.Match(input2);
+                    string value = match.Groups[1].Value;
+                    scriplayContext.labelMap.Add(value, j);
+                }
+            }
+            return scriplayContext;
+        }
+
+        // Token: 0x06000035 RID: 53 RVA: 0x00004894 File Offset: 0x00002A94
+        public static ScriplayContext readScriptFile(string filePath)
+        {
+            Util.info(string.Format("スクリプトファイル読み込み： {0}", filePath));
+            FileInfo fileInfo = new FileInfo(filePath);
+            string[] array = Util.readAllText(filePath);
+            return ScriplayContext.readScriptFile(fileInfo.Name, array);
+        }
+
+        // Token: 0x06000036 RID: 54 RVA: 0x000048D4 File Offset: 0x00002AD4
+        public void Update()
+        {
+            bool flag = ScriplayPlugin.maidList.Count == 0;
+            if (!flag)
+            {
+                bool flag2 = this.waitSecond > 0f;
+                if (flag2)
+                {
+                    this.waitSecond -= Time.deltaTime;
+                }
+                else
+                {
+                    bool flag3 = this.showText_waitTime > 0f;
+                    if (flag3)
+                    {
+                        this.showText_waitTime -= Time.deltaTime;
+                        bool flag4 = this.showText_waitTime < 0f;
+                        if (flag4)
+                        {
+                            this.showText = "";
+                        }
+                    }
+                    else
+                    {
+                        bool flag5 = this.selection_waitSecond > 0f;
+                        if (flag5)
+                        {
+                            this.selection_waitSecond -= Time.deltaTime;
+                            bool flag6 = this.selection_waitSecond < 0f;
+                            if (flag6)
+                            {
+                                this.selection_selectionList = new List<ScriplayContext.Selection>();
+                            }
+                            else
+                            {
+                                bool flag7 = this.selection_selectedItem != ScriplayContext.Selection.None;
+                                if (flag7)
+                                {
+                                    this.exec_goto(this.selection_selectedItem.gotoLabel);
+                                    this.selection_waitSecond = -1f;
+                                    this.selection_selectedItem = ScriplayContext.Selection.None;
+                                    this.selection_selectionList.Clear();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            List<int> list = new List<int>();
+                            foreach (KeyValuePair<int, bool> keyValuePair in this.talk_waitUntilFinishSpeekingDict)
+                            {
+                                int key = keyValuePair.Key;
+                                bool value = keyValuePair.Value;
+                                bool flag8 = value;
+                                if (flag8)
+                                {
+                                    bool flag9 = ScriplayPlugin.maidList[key].isPlayingVoice();
+                                    if (flag9)
+                                    {
+                                        return;
+                                    }
+                                    list.Add(key);
+                                }
+                            }
+                            foreach (int key2 in list)
+                            {
+                                this.talk_waitUntilFinishSpeekingDict.Remove(key2);
+                            }
+                            while (!this.scriptFinished)
+                            {
+                                this.currentExecuteLine++;
+                                bool flag10 = this.currentExecuteLine >= this.scriptArray.Length;
+                                if (flag10)
+                                {
+                                    this.scriptFinished = true;
+                                    Util.info(string.Format("すべてのスクリプトを実行しました. 行数：{0},{1}", this.currentExecuteLine.ToString(), this.scriptName));
+                                    break;
+                                }
+                                string text = this.scriptArray[this.currentExecuteLine];
+                                bool flag11 = ScriplayContext.reg_comment.IsMatch(text);
+                                if (!flag11)
+                                {
+                                    bool flag12 = ScriplayContext.reg_label.IsMatch(text);
+                                    if (!flag12)
+                                    {
+                                        bool flag13 = ScriplayContext.reg_scriptInfo.IsMatch(text);
+                                        if (!flag13)
+                                        {
+                                            bool flag14 = ScriplayContext.reg_require.IsMatch(text);
+                                            if (flag14)
+                                            {
+                                                this.exec_require(this.parseParameter(ScriplayContext.reg_require, text));
+                                                break;
+                                            }
+                                            bool flag15 = ScriplayContext.reg_auto.IsMatch(text);
+                                            if (flag15)
+                                            {
+                                                Dictionary<string, string> dictionary = this.parseParameter(ScriplayContext.reg_auto, text);
+                                                for (int i = 1; i < 10; i++)
+                                                {
+                                                    string key3 = "auto" + i.ToString();
+                                                    bool flag16 = dictionary.ContainsKey(key3);
+                                                    if (flag16)
+                                                    {
+                                                        this.autoModeList.Add(dictionary[key3]);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                bool flag17 = ScriplayContext.reg_posAbsolute.IsMatch(text);
+                                                if (flag17)
+                                                {
+                                                    this.exec_posAbsolute(this.parseParameter(ScriplayContext.reg_posAbsolute, text));
+                                                    break;
+                                                }
+                                                bool flag18 = ScriplayContext.reg_posRelative.IsMatch(text);
+                                                if (flag18)
+                                                {
+                                                    this.exec_posRelative(this.parseParameter(ScriplayContext.reg_posRelative, text));
+                                                    break;
+                                                }
+                                                bool flag19 = ScriplayContext.reg_rotAbsolute.IsMatch(text);
+                                                if (flag19)
+                                                {
+                                                    this.exec_rotAbsolute(this.parseParameter(ScriplayContext.reg_rotAbsolute, text));
+                                                    break;
+                                                }
+                                                bool flag20 = ScriplayContext.reg_rotRelative.IsMatch(text);
+                                                if (flag20)
+                                                {
+                                                    this.exec_rotRelative(this.parseParameter(ScriplayContext.reg_rotRelative, text));
+                                                    break;
+                                                }
+                                                bool flag21 = ScriplayContext.reg_show.IsMatch(text);
+                                                if (flag21)
+                                                {
+                                                    this.exec_show(this.parseParameter(ScriplayContext.reg_show, text), -1);
+                                                    break;
+                                                }
+                                                bool flag22 = ScriplayContext.reg_sound.IsMatch(text);
+                                                if (flag22)
+                                                {
+                                                    this.exec_sound(this.parseParameter(ScriplayContext.reg_sound, text));
+                                                    break;
+                                                }
+                                                bool flag23 = ScriplayContext.reg_motion.IsMatch(text);
+                                                if (flag23)
+                                                {
+                                                    this.exec_motion(this.parseParameter(ScriplayContext.reg_motion, text));
+                                                    break;
+                                                }
+                                                bool flag24 = ScriplayContext.reg_face.IsMatch(text);
+                                                if (flag24)
+                                                {
+                                                    this.exec_face(this.parseParameter(ScriplayContext.reg_face, text));
+                                                    break;
+                                                }
+                                                bool flag25 = ScriplayContext.reg_wait.IsMatch(text);
+                                                if (flag25)
+                                                {
+                                                    Match match = ScriplayContext.reg_wait.Match(text);
+                                                    string value2 = match.Groups[1].Value;
+                                                    this.selection_waitSecond = this.parseFloat(value2, new string[]
+                                                    {
+                                                        "sec",
+                                                        "s"
+                                                    });
+                                                    break;
+                                                }
+                                                bool flag26 = ScriplayContext.reg_goto.IsMatch(text);
+                                                if (flag26)
+                                                {
+                                                    Match match2 = ScriplayContext.reg_goto.Match(text);
+                                                    string value3 = match2.Groups[1].Value;
+                                                    this.exec_goto(value3);
+                                                }
+                                                else
+                                                {
+                                                    bool flag27 = ScriplayContext.reg_talk.IsMatch(text);
+                                                    if (flag27)
+                                                    {
+                                                        this.exec_talk(this.parseParameter(ScriplayContext.reg_talk, text), false, this.currentExecuteLine);
+                                                        break;
+                                                    }
+                                                    bool flag28 = ScriplayContext.reg_talkRepeat.IsMatch(text);
+                                                    if (flag28)
+                                                    {
+                                                        this.exec_talk(this.parseParameter(ScriplayContext.reg_talkRepeat, text), true, this.currentExecuteLine);
+                                                        break;
+                                                    }
+                                                    bool flag29 = ScriplayContext.reg_eyeToCam.IsMatch(text);
+                                                    if (flag29)
+                                                    {
+                                                        this.exec_eyeToCam(this.parseParameter(ScriplayContext.reg_eyeToCam, text));
+                                                        break;
+                                                    }
+                                                    bool flag30 = ScriplayContext.reg_headToCam.IsMatch(text);
+                                                    if (flag30)
+                                                    {
+                                                        this.exec_headToCam(this.parseParameter(ScriplayContext.reg_headToCam, text));
+                                                        break;
+                                                    }
+                                                    bool flag31 = ScriplayContext.reg_selection.IsMatch(text);
+                                                    if (flag31)
+                                                    {
+                                                        Dictionary<string, string> dictionary2 = this.parseParameter(ScriplayContext.reg_selection, text);
+                                                        bool flag32 = dictionary2.ContainsKey("wait");
+                                                        if (flag32)
+                                                        {
+                                                            this.selection_waitSecond = this.parseFloat(dictionary2["wait"], new string[]
+                                                            {
+                                                                "sec",
+                                                                "s"
+                                                            });
+                                                        }
+                                                        else
+                                                        {
+                                                            this.selection_waitSecond = 3.1536E+07f;
+                                                        }
+                                                        for (; ; )
+                                                        {
+                                                            int num = this.currentExecuteLine + 1;
+                                                            bool flag33 = num >= this.scriptArray.Length || !ScriplayContext.reg_selectionItem.IsMatch(this.scriptArray[num]);
+                                                            if (flag33)
+                                                            {
+                                                                break;
+                                                            }
+                                                            this.currentExecuteLine++;
+                                                            text = this.scriptArray[this.currentExecuteLine];
+                                                            Match match3 = ScriplayContext.reg_selectionItem.Match(text);
+                                                            string value4 = match3.Groups[1].Value;
+                                                            string value5 = match3.Groups[2].Value;
+                                                            dictionary2 = this.parseParameter(value5);
+                                                            this.addSelection(value4, dictionary2);
+                                                        }
+                                                        break;
+                                                    }
+                                                    bool flag34 = text == "";
+                                                    if (!flag34)
+                                                    {
+                                                        Util.info(string.Format("解釈できませんでした：{0}:{1}", this.currentExecuteLine.ToString(), text));
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Token: 0x06000037 RID: 55 RVA: 0x00005070 File Offset: 0x00003270
+        private void exec_eyeToCam(Dictionary<string, string> paramDict)
+        {
+            Util.debug(string.Format("line{0} : eyeToCam ", this.currentExecuteLine.ToString()));
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            foreach (ScriplayPlugin.IMaid maid in list)
+            {
+                ScriplayPlugin.IMaid.EyeHeadToCamState state = ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                bool flag = paramDict.ContainsKey("mode");
+                if (flag)
+                {
+                    string text = paramDict["mode"].ToLower();
+                    bool flag2 = text == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto.viewStr;
+                    if (flag2)
+                    {
+                        state = ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                    }
+                    else
+                    {
+                        bool flag3 = text == ScriplayPlugin.IMaid.EyeHeadToCamState.Yes.viewStr;
+                        if (flag3)
+                        {
+                            state = ScriplayPlugin.IMaid.EyeHeadToCamState.Yes;
+                        }
+                        else
+                        {
+                            bool flag4 = text == ScriplayPlugin.IMaid.EyeHeadToCamState.No.viewStr;
+                            if (flag4)
+                            {
+                                state = ScriplayPlugin.IMaid.EyeHeadToCamState.No;
+                            }
+                            else
+                            {
+                                Util.info(string.Format("line{0} : モード指定が不適切です:{1}", this.currentExecuteLine.ToString(), text));
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Util.info(string.Format("line{0} : モードが指定されていません", this.currentExecuteLine.ToString()));
+                }
+                maid.change_eyeToCam(state);
+            }
+        }
+
+        // Token: 0x06000038 RID: 56 RVA: 0x000051BC File Offset: 0x000033BC
+        private void exec_headToCam(Dictionary<string, string> paramDict)
+        {
+            Util.debug(string.Format("line{0} : headToCam ", this.currentExecuteLine.ToString()));
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            using (List<ScriplayPlugin.IMaid>.Enumerator enumerator = list.GetEnumerator())
+            {
+                if (enumerator.MoveNext())
+                {
+                    ScriplayPlugin.IMaid maid = enumerator.Current;
+                    ScriplayPlugin.IMaid.EyeHeadToCamState state = ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                    bool flag = paramDict.ContainsKey("mode");
+                    if (flag)
+                    {
+                        string text = paramDict["mode"].ToLower();
+                        bool flag2 = text == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto.viewStr;
+                        if (flag2)
+                        {
+                            state = ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                        }
+                        else
+                        {
+                            bool flag3 = text == ScriplayPlugin.IMaid.EyeHeadToCamState.Yes.viewStr;
+                            if (flag3)
+                            {
+                                state = ScriplayPlugin.IMaid.EyeHeadToCamState.Yes;
+                            }
+                            else
+                            {
+                                bool flag4 = text == ScriplayPlugin.IMaid.EyeHeadToCamState.No.viewStr;
+                                if (flag4)
+                                {
+                                    state = ScriplayPlugin.IMaid.EyeHeadToCamState.No;
+                                }
+                                else
+                                {
+                                    Util.info(string.Format("line{0} : モード指定が不適切です:{1}", this.currentExecuteLine.ToString(), text));
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Util.info(string.Format("line{0} : モードが指定されていません", this.currentExecuteLine.ToString()));
+                    }
+                    bool flag5 = paramDict.ContainsKey("fade");
+                    if (flag5)
+                    {
+                        float fadeSec = this.parseFloat(paramDict["fade"], new string[]
+                        {
+                            "sec",
+                            "s"
+                        });
+                        maid.change_headToCam(state, fadeSec);
+                    }
+                    else
+                    {
+                        maid.change_headToCam(state, -1f);
+                    }
+                }
+            }
+        }
+
+        // Token: 0x06000039 RID: 57 RVA: 0x0000536C File Offset: 0x0000356C
+        private Dictionary<string, string> parseParameter(Regex reg, string lineStr)
+        {
+            bool flag = !reg.IsMatch(lineStr);
+            Dictionary<string, string> result;
+            if (flag)
+            {
+                result = new Dictionary<string, string>();
+            }
+            else
+            {
+                string value = reg.Match(lineStr).Groups[1].Value;
+                result = this.parseParameter(value);
+            }
+            return result;
+        }
+
+        // Token: 0x0600003A RID: 58 RVA: 0x000053BC File Offset: 0x000035BC
+        private Dictionary<string, string> parseParameter(string paramStr)
+        {
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
+            paramStr = ScriplayContext.parseParameter_regex.Replace(paramStr, " ");
+            paramStr = ScriplayContext.parseParameter_regex_header.Replace(paramStr, "");
+            paramStr = ScriplayContext.parseParameter_regex_footer.Replace(paramStr, "");
+            string[] array = paramStr.Split(new char[]
+            {
+                ' '
+            });
+            foreach (string text in array)
+            {
+                string[] array3 = text.Split(new char[]
+                {
+                    '='
+                });
+                bool flag = array3.Length != 2;
+                if (flag)
+                {
+                    Util.info(string.Format("line{0} : パラメータを読み込めませんでした。「key=value」形式になっていますか？ : {1}", this.currentExecuteLine.ToString(), text));
+                }
+                else
+                {
+                    dictionary.Add(array3[0], array3[1]);
+                }
+            }
+            return dictionary;
+        }
+
+        // Token: 0x0600003B RID: 59 RVA: 0x0000548C File Offset: 0x0000368C
+        private float parseFloat(string floatStr, string[] suffix = null)
+        {
+            float result = -1f;
+            bool flag = suffix != null;
+            if (flag)
+            {
+                floatStr = floatStr.ToLower();
+                foreach (string oldValue in suffix)
+                {
+                    floatStr = floatStr.Replace(oldValue, "");
+                }
+            }
+            try
+            {
+                result = float.Parse(floatStr);
+            }
+            catch (Exception ex)
+            {
+                Util.info(string.Format("line{0} : 数値を読み込めませんでした : {1}", this.currentExecuteLine.ToString(), floatStr));
+                Util.debug(ex.StackTrace);
+            }
+            return result;
+        }
+
+        // Token: 0x0600003C RID: 60 RVA: 0x0000552C File Offset: 0x0000372C
+        private void exec_sound(Dictionary<string, string> paramDict)
+        {
+            Util.debug(string.Format("line{0} : sound ", this.currentExecuteLine.ToString()));
+            bool flag = paramDict.ContainsKey("name");
+            if (flag)
+            {
+                string text = paramDict["name"];
+                bool flag2 = text == "stop";
+                if (flag2)
+                {
+                    text = "";
+                }
+                ScriplayPlugin.change_SE(text);
+            }
+            else
+            {
+                ScriplayPlugin.change_SE("");
+            }
+        }
+
+        // Token: 0x0600003D RID: 61 RVA: 0x000055A0 File Offset: 0x000037A0
+        private void exec_require(Dictionary<string, string> paramDict)
+        {
+            bool flag = paramDict.ContainsKey("maidNum");
+            if (flag)
+            {
+                int num = (int)this.parseFloat(paramDict["maidNum"], null);
+                bool flag2 = ScriplayPlugin.maidList.Count < num;
+                if (flag2)
+                {
+                    string message = string.Format("メイドさんが{0}人以上必要です", num);
+                    ScriplayPlugin.toast(message);
+                    Util.info(message);
+                    this.scriptFinished = true;
+                }
+            }
+        }
+
+        // Token: 0x0600003E RID: 62 RVA: 0x00005610 File Offset: 0x00003810
+        private void exec_motion(Dictionary<string, string> paramDict)
+        {
+            Util.debug(string.Format("line{0} : motion ", this.currentExecuteLine.ToString()));
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            foreach (ScriplayPlugin.IMaid maid in list)
+            {
+                bool flag = paramDict.ContainsKey("name");
+                if (flag)
+                {
+                    maid.change_Motion(paramDict["name"], true, false, -1f, -1f);
+                }
+                else
+                {
+                    bool flag2 = paramDict.ContainsKey("category");
+                    if (flag2)
+                    {
+                        List<ScriplayPlugin.MotionInfo> motionList = ScriplayPlugin.MotionTable.queryTable_motionNameBase(paramDict["category"], "-");
+                        maid.change_Motion(motionList, true, true);
+                    }
+                    else
+                    {
+                        Util.info(string.Format("line{0} : モーションが指定されていません", this.currentExecuteLine.ToString()));
+                    }
+                }
+            }
+        }
+
+        // Token: 0x0600003F RID: 63 RVA: 0x0000570C File Offset: 0x0000390C
+        private void exec_face(Dictionary<string, string> paramDict)
+        {
+            Util.debug(string.Format("line{0} : face ", this.currentExecuteLine.ToString()));
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            foreach (ScriplayPlugin.IMaid maid in list)
+            {
+                float num = -1f;
+                bool flag = paramDict.ContainsKey("fade");
+                if (flag)
+                {
+                    num = this.parseFloat(paramDict["fade"], new string[]
+                    {
+                        "sec",
+                        "s"
+                    });
+                }
+                bool flag2 = paramDict.ContainsKey("name");
+                if (flag2)
+                {
+                    string faceAnime = paramDict["name"];
+                    bool flag3 = num == -1f;
+                    if (flag3)
+                    {
+                        maid.change_faceAnime(faceAnime, -1f);
+                    }
+                    else
+                    {
+                        maid.change_faceAnime(faceAnime, num);
+                    }
+                }
+                else
+                {
+                    bool flag4 = paramDict.ContainsKey("category");
+                    if (flag4)
+                    {
+                        List<string> faceAnimeList = ScriplayPlugin.FaceTable.queryTable(paramDict["category"]);
+                        bool flag5 = num == -1f;
+                        if (flag5)
+                        {
+                            maid.change_faceAnime(faceAnimeList, -1f);
+                        }
+                        else
+                        {
+                            maid.change_faceAnime(faceAnimeList, num);
+                        }
+                    }
+                }
+                int num2 = -1;
+                int num3 = -1;
+                bool enableYodare = false;
+                bool flag6 = paramDict.ContainsKey("namida") || paramDict.ContainsKey("涙");
+                if (flag6)
+                {
+                    bool flag7 = paramDict.ContainsKey("namida");
+                    if (flag7)
+                    {
+                        num3 = (int)this.parseFloat(paramDict["namida"], null);
+                    }
+                    bool flag8 = paramDict.ContainsKey("涙");
+                    if (flag8)
+                    {
+                        num3 = (int)this.parseFloat(paramDict["涙"], null);
+                    }
+                    bool flag9 = num3 < 0 || num3 > 3;
+                    if (flag9)
+                    {
+                        Util.info(string.Format("line{0} : 涙の値は0~3である必要があります。強制的に0にします。", this.currentExecuteLine.ToString()));
+                        num3 = 0;
+                    }
+                }
+                bool flag10 = paramDict.ContainsKey("hoho") || paramDict.ContainsKey("頬");
+                if (flag10)
+                {
+                    bool flag11 = paramDict.ContainsKey("hoho");
+                    if (flag11)
+                    {
+                        num2 = (int)this.parseFloat(paramDict["hoho"], null);
+                    }
+                    bool flag12 = paramDict.ContainsKey("頬");
+                    if (flag12)
+                    {
+                        num2 = (int)this.parseFloat(paramDict["頬"], null);
+                    }
+                    bool flag13 = num2 < 0 || num2 > 3;
+                    if (flag13)
+                    {
+                        Util.info(string.Format("line{0} : 頬の値は0~3である必要があります。強制的に0にします。", this.currentExecuteLine.ToString()));
+                        num2 = 0;
+                    }
+                }
+                bool flag14 = paramDict.ContainsKey("yodare") || paramDict.ContainsKey("よだれ");
+                if (flag14)
+                {
+                    int num4 = -1;
+                    bool flag15 = paramDict.ContainsKey("yodare");
+                    if (flag15)
+                    {
+                        num4 = (int)this.parseFloat(paramDict["yodare"], null);
+                    }
+                    bool flag16 = paramDict.ContainsKey("頬");
+                    if (flag16)
+                    {
+                        num4 = (int)this.parseFloat(paramDict["頬"], null);
+                    }
+                    bool flag17 = num4 == 1;
+                    if (flag17)
+                    {
+                        enableYodare = true;
+                    }
+                    maid.change_FaceBlend(-1, -1, enableYodare);
+                }
+                maid.change_FaceBlend(num2, num3, enableYodare);
+            }
+        }
+
+        // Token: 0x06000040 RID: 64 RVA: 0x00005A58 File Offset: 0x00003C58
+        private void exec_posRelative(Dictionary<string, string> paramDict)
+        {
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            foreach (ScriplayPlugin.IMaid maid in list)
+            {
+                float x = 0f;
+                float y = 0f;
+                float z = 0f;
+                bool flag = paramDict.ContainsKey("x");
+                if (flag)
+                {
+                    x = this.parseFloat(paramDict["x"], null);
+                }
+                bool flag2 = paramDict.ContainsKey("y");
+                if (flag2)
+                {
+                    y = this.parseFloat(paramDict["y"], null);
+                }
+                bool flag3 = paramDict.ContainsKey("z");
+                if (flag3)
+                {
+                    z = this.parseFloat(paramDict["z"], null);
+                }
+                maid.change_positionRelative(x, y, z);
+            }
+        }
+
+        // Token: 0x06000041 RID: 65 RVA: 0x00005B48 File Offset: 0x00003D48
+        private void exec_rotRelative(Dictionary<string, string> paramDict)
+        {
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            foreach (ScriplayPlugin.IMaid maid in list)
+            {
+                float x_deg = 0f;
+                float y_deg = 0f;
+                float z_deg = 0f;
+                bool flag = paramDict.ContainsKey("x");
+                if (flag)
+                {
+                    x_deg = this.parseFloat(paramDict["x"], null);
+                }
+                bool flag2 = paramDict.ContainsKey("y");
+                if (flag2)
+                {
+                    y_deg = this.parseFloat(paramDict["y"], null);
+                }
+                bool flag3 = paramDict.ContainsKey("z");
+                if (flag3)
+                {
+                    z_deg = this.parseFloat(paramDict["z"], null);
+                }
+                maid.change_angleRelative(x_deg, y_deg, z_deg);
+            }
+        }
+
+        // Token: 0x06000042 RID: 66 RVA: 0x00005C38 File Offset: 0x00003E38
+        private void exec_posAbsolute(Dictionary<string, string> paramDict)
+        {
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            foreach (ScriplayPlugin.IMaid maid in list)
+            {
+                bool keepX = true;
+                bool keepY = true;
+                bool keepZ = true;
+                float x = 0f;
+                float y = 0f;
+                float z = 0f;
+                bool flag = paramDict.ContainsKey("x");
+                if (flag)
+                {
+                    keepX = false;
+                    x = this.parseFloat(paramDict["x"], null);
+                }
+                bool flag2 = paramDict.ContainsKey("y");
+                if (flag2)
+                {
+                    keepY = false;
+                    y = this.parseFloat(paramDict["y"], null);
+                }
+                bool flag3 = paramDict.ContainsKey("z");
+                if (flag3)
+                {
+                    keepZ = false;
+                    z = this.parseFloat(paramDict["z"], null);
+                }
+                maid.change_positionAbsolute(x, y, z, keepX, keepY, keepZ);
+            }
+        }
+
+        // Token: 0x06000043 RID: 67 RVA: 0x00005D40 File Offset: 0x00003F40
+        private void exec_rotAbsolute(Dictionary<string, string> paramDict)
+        {
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            foreach (ScriplayPlugin.IMaid maid in list)
+            {
+                bool keepX = true;
+                bool keepY = true;
+                bool keepZ = true;
+                float x_deg = 0f;
+                float y_deg = 0f;
+                float z_deg = 0f;
+                bool flag = paramDict.ContainsKey("x");
+                if (flag)
+                {
+                    keepX = false;
+                    x_deg = this.parseFloat(paramDict["x"], null);
+                }
+                bool flag2 = paramDict.ContainsKey("y");
+                if (flag2)
+                {
+                    keepY = false;
+                    y_deg = this.parseFloat(paramDict["y"], null);
+                }
+                bool flag3 = paramDict.ContainsKey("z");
+                if (flag3)
+                {
+                    keepZ = false;
+                    z_deg = this.parseFloat(paramDict["z"], null);
+                }
+                maid.change_angleAbsolute(x_deg, y_deg, z_deg, keepX, keepY, keepZ);
+            }
+        }
+
+        // Token: 0x06000044 RID: 68 RVA: 0x00005E48 File Offset: 0x00004048
+        private void exec_show(Dictionary<string, string> paramDict, int lineNo = -1)
+        {
+            Util.debug(string.Format("line{0} : show ", this.currentExecuteLine.ToString()));
+            bool flag = paramDict.ContainsKey("text");
+            if (flag)
+            {
+                this.showText = paramDict["text"];
+                bool flag2 = paramDict.ContainsKey("wait");
+                if (flag2)
+                {
+                    this.showText_waitTime = this.parseFloat(paramDict["wait"], new string[]
+                    {
+                        "sec",
+                        "s"
+                    });
+                }
+                else
+                {
+                    this.showText_waitTime = (float)this.showText.Length / 10f;
+                    this.showText_waitTime = Math.Max(this.showText_waitTime, 1f);
+                }
+            }
+            else
+            {
+                Util.info(string.Format("line{0} : 表示するテキストが見つかりません", this.currentExecuteLine.ToString()));
+            }
+        }
+
+        // Token: 0x06000045 RID: 69 RVA: 0x00005F24 File Offset: 0x00004124
+        private void exec_talk(Dictionary<string, string> paramDict, bool loop = false, int lineNo = -1)
+        {
+            Util.debug(string.Format("line{0} : talk ", this.currentExecuteLine.ToString()));
+            List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
+            foreach (ScriplayPlugin.IMaid maid in list)
+            {
+                List<string> list2 = new List<string>();
+                bool flag = paramDict.ContainsKey("finish");
+                if (flag)
+                {
+                    bool flag2 = paramDict["finish"] == "1";
+                    if (flag2)
+                    {
+                        this.talk_waitUntilFinishSpeekingDict[maid.maidNo] = true;
+                    }
+                }
+                bool flag3 = paramDict.ContainsKey("name");
+                if (flag3)
+                {
+                    list2.Add(paramDict["name"]);
+                }
+                else
+                {
+                    bool flag4 = paramDict.ContainsKey("category");
+                    if (flag4)
+                    {
+                        string text = paramDict["category"];
+                        if (loop)
+                        {
+                            list2 = ScriplayPlugin.LoopVoiceTable.queryTable(maid.sPersonal, text);
+                        }
+                        else
+                        {
+                            list2 = ScriplayPlugin.OnceVoiceTable.queryTable(maid.sPersonal, text);
+                        }
+                        bool flag5 = list2.Count == 0;
+                        if (flag5)
+                        {
+                            Util.info(string.Format("line{0} : カテゴリのボイスが見つかりません。カテゴリ：{1}", this.currentExecuteLine.ToString(), text));
+                            break;
+                        }
+                    }
+                }
+                bool flag6 = list2.Count == 0 | (list2.Count == 1 && list2[0].ToLower().Equals("stop"));
+                if (flag6)
+                {
+                    maid.change_stopVoice();
+                }
+                if (loop)
+                {
+                    maid.change_LoopVoice(list2);
+                }
+                else
+                {
+                    maid.change_onceVoice(list2);
+                }
+            }
+        }
+
+        // Token: 0x06000046 RID: 70 RVA: 0x000060F0 File Offset: 0x000042F0
+        private List<ScriplayPlugin.IMaid> selectMaid(Dictionary<string, string> paramDict)
+        {
+            List<ScriplayPlugin.IMaid> list = new List<ScriplayPlugin.IMaid>();
+            bool flag = paramDict.ContainsKey("maid");
+            if (flag)
+            {
+                int num = int.Parse(paramDict["maid"]);
+                bool flag2 = num < ScriplayPlugin.maidList.Count;
+                if (flag2)
+                {
+                    list.Add(ScriplayPlugin.maidList[num]);
+                }
+                else
+                {
+                    Util.info(string.Format("メイドは{0}人しか有効にしていません。maidNo.{1}は無効です", ScriplayPlugin.maidList.Count, num));
+                }
+            }
+            else
+            {
+                list = new List<ScriplayPlugin.IMaid>(ScriplayPlugin.maidList);
+            }
+            return list;
+        }
+
+        // Token: 0x06000047 RID: 71 RVA: 0x0000618C File Offset: 0x0000438C
+        private void exec_goto(string gotoLabel)
+        {
+            bool flag = !this.labelMap.ContainsKey(gotoLabel);
+            if (flag)
+            {
+                Util.info(string.Format("line{0} : ジャンプ先ラベルが見つかりません。ジャンプ先：{1}", this.currentExecuteLine.ToString(), gotoLabel));
+                this.scriptFinished = true;
+            }
+            this.currentExecuteLine = this.labelMap[gotoLabel];
+            Util.debug(string.Format("line{0} : 「{1}」へジャンプしました", this.currentExecuteLine.ToString(), gotoLabel));
+        }
+
+        // Token: 0x06000048 RID: 72 RVA: 0x00006204 File Offset: 0x00004404
+        public void addSelection(string itemViewStr, Dictionary<string, string> dict)
+        {
+            string gotoLabel = "";
+            bool flag = dict.ContainsKey("goto");
+            if (flag)
+            {
+                gotoLabel = dict["goto"];
+            }
+            Dictionary<string, int> dictionary = new Dictionary<string, int>();
+            foreach (string text in dict.Keys)
+            {
+                bool flag2 = text.Equals("goto");
+                if (!flag2)
+                {
+                    string key = text;
+                    try
+                    {
+                        int value = int.Parse(dict[text].Replace("%", ""));
+                        dictionary.Add(key, value);
+                    }
+                    catch (Exception ex)
+                    {
+                        Util.info(string.Format("選択肢\u3000自動選択確率の読み込みに失敗 : {0}, {1}, {2} \r\n {3}", new object[]
+                        {
+                            itemViewStr,
+                            text,
+                            dict[text],
+                            ex.StackTrace
+                        }));
+                    }
+                }
+            }
+            this.selection_selectionList.Add(new ScriplayContext.Selection(itemViewStr, gotoLabel, dictionary));
+            Util.debug(string.Format("選択肢「{0}」を追加", itemViewStr));
+        }
+
+        // Token: 0x04000037 RID: 55
+        public static ScriplayContext None = new ScriplayContext(" - ", true);
+
+        // Token: 0x04000038 RID: 56
+        private IDictionary<string, int> labelMap = new Dictionary<string, int>();
+
+        // Token: 0x04000039 RID: 57
+        private string[] scriptArray = new string[0];
+
+        // Token: 0x0400003A RID: 58
+        public int currentExecuteLine = -1;
+
+        // Token: 0x0400003B RID: 59
+        private float waitSecond = 0f;
+
+        // Token: 0x0400003C RID: 60
+        public bool scriptFinished_flag = false;
+
+        // Token: 0x0400003D RID: 61
+        private float selection_waitSecond = 0f;
+
+        // Token: 0x0400003E RID: 62
+        public ScriplayContext.Selection selection_selectedItem = ScriplayContext.Selection.None;
+
+        // Token: 0x0400003F RID: 63
+        public List<ScriplayContext.Selection> selection_selectionList = new List<ScriplayContext.Selection>();
+
+        // Token: 0x04000040 RID: 64
+        public Dictionary<int, bool> talk_waitUntilFinishSpeekingDict = new Dictionary<int, bool>();
+
+        // Token: 0x04000041 RID: 65
+        public readonly string scriptName = "";
+
+        // Token: 0x04000042 RID: 66
+        public string showText = "";
+
+        // Token: 0x04000043 RID: 67
+        private float showText_waitTime = -1f;
+
+        // Token: 0x04000044 RID: 68
+        private static Regex reg_comment = new Regex("^//.+", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000045 RID: 69
+        private static Regex reg_label = new Regex("^#+\\s*(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000046 RID: 70
+        private static Regex reg_scriptInfo = new Regex("^@info\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000047 RID: 71
+        private static Regex reg_require = new Regex("^@require\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000048 RID: 72
+        private static Regex reg_auto = new Regex("^@auto\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000049 RID: 73
+        private static Regex reg_posRelative = new Regex("^@posRelative\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x0400004A RID: 74
+        private static Regex reg_posAbsolute = new Regex("^@posAbsolute\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x0400004B RID: 75
+        private static Regex reg_rotRelative = new Regex("^@rotRelative\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x0400004C RID: 76
+        private static Regex reg_rotAbsolute = new Regex("^@rotAbsolute\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x0400004D RID: 77
+        private static Regex reg_sound = new Regex("^@sound\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x0400004E RID: 78
+        private static Regex reg_motion = new Regex("^@motion\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x0400004F RID: 79
+        private static Regex reg_face = new Regex("^@face\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000050 RID: 80
+        private static Regex reg_wait = new Regex("^@wait\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000051 RID: 81
+        private static Regex reg_goto = new Regex("^@goto\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000052 RID: 82
+        private static Regex reg_show = new Regex("^@show\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000053 RID: 83
+        private static Regex reg_talk = new Regex("^@talk\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000054 RID: 84
+        private static Regex reg_talkRepeat = new Regex("^@talkrepeat\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000055 RID: 85
+        private static Regex reg_selection = new Regex("^@selection\\s*([^\\s]+)?", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000056 RID: 86
+        private static Regex reg_selectionItem = new Regex("[-]\\s+([^\\s]+)\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000057 RID: 87
+        private static Regex reg_eyeToCam = new Regex("^@eyeToCam\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000058 RID: 88
+        private static Regex reg_headToCam = new Regex("^@headToCam\\s+(.+)", RegexOptions.IgnoreCase);
+
+        // Token: 0x04000059 RID: 89
+        private static Regex parseParameter_regex = new Regex("\\s+");
+
+        // Token: 0x0400005A RID: 90
+        private static Regex parseParameter_regex_header = new Regex("^\\s+");
+
+        // Token: 0x0400005B RID: 91
+        private static Regex parseParameter_regex_footer = new Regex("\\s+$");
+
+        // Token: 0x0400005C RID: 92
+        private List<string> autoModeList = new List<string>();
+
+        // Token: 0x0400005D RID: 93
+        private const string key_maid = "maid";
+
+        // Token: 0x0400005E RID: 94
+        private const string key_name = "name";
+
+        // Token: 0x0400005F RID: 95
+        private const string key_category = "category";
+
+        // Token: 0x04000060 RID: 96
+        private const string key_mode = "mode";
+
+        // Token: 0x04000061 RID: 97
+        private const string key_fade = "fade";
+
+        // Token: 0x04000062 RID: 98
+        private const string key_wait = "wait";
+
+        // Token: 0x04000063 RID: 99
+        private const string key_finish = "finish";
+
+        // Token: 0x04000064 RID: 100
+        private const string key_goto = "goto";
+
+        // Token: 0x04000065 RID: 101
+        private const string key_maidNum = "maidNum";
+
+        // Token: 0x04000066 RID: 102
+        private const string key_manNum = "manNum";
+
+        // Token: 0x04000067 RID: 103
+        private const string key_text = "text";
+
+        // Token: 0x04000068 RID: 104
+        private const string key_hoho = "hoho";
+
+        // Token: 0x04000069 RID: 105
+        private const string key_namida = "namida";
+
+        // Token: 0x0400006A RID: 106
+        private const string key_yodare = "yodare";
+
+        // Token: 0x0400006B RID: 107
+        private const string key_頬 = "頬";
+
+        // Token: 0x0400006C RID: 108
+        private const string key_涙 = "涙";
+
+        // Token: 0x0400006D RID: 109
+        private const string key_よだれ = "よだれ";
+
+        // Token: 0x0400006E RID: 110
+        private const string key_x = "x";
+
+        // Token: 0x0400006F RID: 111
+        private const string key_y = "y";
+
+        // Token: 0x04000070 RID: 112
+        private const string key_z = "z";
+
+        // Token: 0x0200000E RID: 14
+        public class Selection
+        {
+            // Token: 0x06000092 RID: 146 RVA: 0x00008468 File Offset: 0x00006668
+            public Selection(string viewStr, string gotoLabel, Dictionary<string, int> autoProbDict)
+            {
+                this.viewStr = viewStr;
+                this.gotoLabel = gotoLabel;
+                this.autoProbDict = autoProbDict;
+            }
+
+            // Token: 0x040000A7 RID: 167
+            public static readonly ScriplayContext.Selection None = new ScriplayContext.Selection("選択肢なし", "", new Dictionary<string, int>());
+
+            // Token: 0x040000A8 RID: 168
+            public readonly string viewStr;
+
+            // Token: 0x040000A9 RID: 169
+            public readonly string gotoLabel;
+
+            // Token: 0x040000AA RID: 170
+            public readonly Dictionary<string, int> autoProbDict;
+        }
+    }
+
+
+    // Token: 0x02000003 RID: 3
     public static class Util
     {
-
-
-        /// <summary>
-        /// ファイル名のリストアップ、デフォルトはCSVファイルのみ
-        /// </summary>
-        /// <param name="searchPath"></param>
-        /// <param name="suffix">例　"csv"</param>
-        /// <returns></returns>
+        // Token: 0x0600001D RID: 29 RVA: 0x00003FAC File Offset: 0x000021AC
         public static List<string> getFileFullpathList(string searchPath, string suffix)
         {
             suffix = "*." + suffix;
-            //フォルダ確認
-            if (!Directory.Exists(searchPath))
+            bool flag = !Directory.Exists(searchPath);
+            if (flag)
             {
-                //ない場合はフォルダ作成
-                DirectoryInfo di = Directory.CreateDirectory(searchPath);
+                DirectoryInfo directoryInfo = Directory.CreateDirectory(searchPath);
             }
             return new List<string>(Directory.GetFiles(searchPath, suffix));
         }
 
-
-        /// <summary>
-        /// コンソールにテキスト出力
-        /// </summary>
-        /// <param name="message"></param>
+        // Token: 0x0600001E RID: 30 RVA: 0x00003FED File Offset: 0x000021ED
         public static void info(string message)
         {
-            Console.WriteLine("I " + PluginMessage(message));
+            Console.WriteLine("I " + Util.PluginMessage(message));
         }
 
-        /// <summary>
-        /// コンソールにテキスト出力
-        /// </summary>
-        /// <param name="message"></param>
+        // Token: 0x0600001F RID: 31 RVA: 0x00004008 File Offset: 0x00002208
         public static void debug(string message)
         {
-            //Console.WriteLine("<color=" + cfg.debugPrintColor + ">" + PluginMessage(message) + "</color>");
-            //UnityEngine.Debug.Log("<color=" + ScriplayPlugin.cfg.debugPrintColor + ">" + PluginMessage(message) + "</color>");
-            if (ScriplayPlugin.cfg.debugMode) UnityEngine.Debug.Log("D " + PluginMessage(message));
+            bool debugMode = ScriplayPlugin.cfg.debugMode;
+            if (debugMode)
+            {
+                UnityEngine.Debug.Log("D " + Util.PluginMessage(message));
+            }
         }
 
+        // Token: 0x06000020 RID: 32 RVA: 0x0000403C File Offset: 0x0000223C
         private static string PluginMessage(string originalMessage)
         {
             return string.Format("{0} > {1}", ScriplayPlugin.cfg.PluginName, originalMessage);
         }
 
-        /// <summary>
-        /// 指定範囲内から特定数を除外してランダムな整数を返す
-        /// Usage:
-        ///  Util.randomInt(0,list.Length-1,currentIndex);
-        /// </summary>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
-        /// <param name="excludeList"></param>
-        /// <returns></returns>
+        // Token: 0x06000021 RID: 33 RVA: 0x00004064 File Offset: 0x00002264
         public static int randomInt(int min, int max, List<int> excludeList = null)
         {
-            if (min >= max) return min;
-            if (excludeList == null) excludeList = new List<int>();
-            Util.debug(string.Format("randomInt min:{0}, max:{1}, exclude{2}", min, max, Util.list2Str(excludeList)));
-            List<int> indexList = Enumerable.Range(min, max).ToList(); //.Where(item => item != exclusionVoiceIndex).ToArray(); //ラムダ式は使えないぽい
-            foreach (int i in excludeList)
+            bool flag = min >= max;
+            int result;
+            if (flag)
             {
-                if (indexList.Count == 1) break;
-                indexList.Remove(i);
+                result = min;
             }
-            return indexList[new System.Random().Next(indexList.ToArray().Length)];
-
+            else
+            {
+                bool flag2 = excludeList == null;
+                if (flag2)
+                {
+                    excludeList = new List<int>();
+                }
+                Util.debug(string.Format("randomInt min:{0}, max:{1}, exclude{2}", min, max, Util.list2Str<int>(excludeList)));
+                List<int> list = Enumerable.Range(min, max).ToList<int>();
+                foreach (int item in excludeList)
+                {
+                    bool flag3 = list.Count == 1;
+                    if (flag3)
+                    {
+                        break;
+                    }
+                    list.Remove(item);
+                }
+                result = list[new System.Random().Next(list.ToArray().Length)];
+            }
+            return result;
         }
 
-        /// <summary>
-        /// Linq使えないため？、joinでエラー出る。代わりにコレクションを文字列化するメソッド
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="collection"></param>
-        /// <returns></returns>
-        public static string list2Str<T>(IEnumerable<T> collection)   // where T: object
+        // Token: 0x06000022 RID: 34 RVA: 0x00004138 File Offset: 0x00002338
+        public static string list2Str<T>(IEnumerable<T> collection)
         {
-            if (collection == null || collection.Count() == 0) return "(要素数　０）";
-            StringBuilder str = new StringBuilder();
-            foreach (T t in collection)
+            bool flag = collection == null || collection.Count<T>() == 0;
+            string result;
+            if (flag)
             {
-                str.Append(t.ToString() + ", ");
+                result = "(要素数\u3000０）";
             }
-            return str.ToString();
+            else
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                foreach (T t in collection)
+                {
+                    stringBuilder.Append(t.ToString() + ", ");
+                }
+                result = stringBuilder.ToString();
+            }
+            return result;
         }
 
+        // Token: 0x06000023 RID: 35 RVA: 0x000041C8 File Offset: 0x000023C8
         public static int randomInt(int min, int max, int excludeValue)
         {
-            return randomInt(min, max, new List<int> { excludeValue });
+            return Util.randomInt(min, max, new List<int>
+            {
+                excludeValue
+            });
         }
 
-        /// <summary>
-        /// ステータス表示用テキストを返す
-        /// </summary>
-        private static string[] SucoreText = new string[] { "☆ ☆ ☆", "★ ☆ ☆", "★ ★ ☆", "★ ★ ★" };
-        //private static string[] SucoreText = new string[] { "_", "Ⅰ", "Ⅱ", "Ⅲ" };
+        // Token: 0x06000024 RID: 36 RVA: 0x000041F0 File Offset: 0x000023F0
         public static string getScoreText(int level)
         {
-            level = (int)Mathf.Clamp(level, 0, 3);
-            return SucoreText[level];
+            level = Mathf.Clamp(level, 0, 3);
+            return Util.SucoreText[level];
         }
 
-        private static bool enSW = false;
-        private static System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-        private static readonly int stopwatch_executeFrames = 60;
-        private static int sw_frames = 0;
+        // Token: 0x06000025 RID: 37 RVA: 0x00004214 File Offset: 0x00002414
         public static void sw_start(string s = "")
         {
-            if (!enSW) return;
-            if (!(sw_frames++ > stopwatch_executeFrames)) return;
-            sw.Start();
+            bool flag = !Util.enSW;
+            if (!flag)
+            {
+                bool flag2 = Util.sw_frames++ <= Util.stopwatch_executeFrames;
+                if (!flag2)
+                {
+                    Util.sw.Start();
+                }
+            }
         }
 
+        // Token: 0x06000026 RID: 38 RVA: 0x00004258 File Offset: 0x00002458
         public static void sw_stop(string s = "")
         {
-            if (!enSW) return;
-            if (!(sw_frames > stopwatch_executeFrames)) return;
-            sw_frames = 0;
-            sw.Stop();
-            sw.Reset();
+            bool flag = !Util.enSW;
+            if (!flag)
+            {
+                bool flag2 = Util.sw_frames <= Util.stopwatch_executeFrames;
+                if (!flag2)
+                {
+                    Util.sw_frames = 0;
+                    Util.sw.Stop();
+                    Util.sw.Reset();
+                }
+            }
         }
 
+        // Token: 0x06000027 RID: 39 RVA: 0x000042A8 File Offset: 0x000024A8
         public static void sw_showTime(string s = "")
         {
-            if (!enSW) return;
-            if (!(sw_frames > stopwatch_executeFrames)) return;
-            sw.Stop();
-            Util.debug(string.Format("{0} 経過時間：{1} ms", s, sw.ElapsedMilliseconds));
-            sw.Reset();
-            sw.Start();
+            bool flag = !Util.enSW;
+            if (!flag)
+            {
+                bool flag2 = Util.sw_frames <= Util.stopwatch_executeFrames;
+                if (!flag2)
+                {
+                    Util.sw.Stop();
+                    Util.debug(string.Format("{0} 経過時間：{1} ms", s, Util.sw.ElapsedMilliseconds));
+                    Util.sw.Reset();
+                    Util.sw.Start();
+                }
+            }
         }
 
-        /// <summary>
-        /// メイドのモーションを実行
-        /// </summary>
-        /// <param name="maid"></param>
-        /// <param name="motionName"></param>
-        /// <param name="isLoop"></param>
-        /// <param name="fadeTime"></param>
-        /// <param name="speed"></param>
+        // Token: 0x06000028 RID: 40 RVA: 0x0000431C File Offset: 0x0000251C
         public static void animate(Maid maid, string motionName, bool isLoop, float fadeTime = 0.5f, float speed = 1f, bool addQue = false)
         {
             try
             {
-                if (!addQue)
+                bool flag = !addQue;
+                if (flag)
                 {
                     maid.CrossFadeAbsolute(motionName, false, isLoop, false, fadeTime, 1f);
                     maid.body0.m_Animation[motionName].speed = speed;
@@ -2136,1145 +3784,142 @@ namespace COM3D2.Scriplay.Plugin
                     maid.CrossFade(motionName, false, isLoop, true, fadeTime, 1f);
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Util.info("モーション再生失敗" + e.Message + "\r\n" + e.StackTrace);
+                Util.info("モーション再生失敗" + ex.Message + "\r\n" + ex.StackTrace);
             }
-
         }
 
-        /// <summary>
-        /// ±20%の範囲の値を返す
-        /// Variation20Percent
-        /// </summary>
-        /// <param name="v"></param>
-        /// <returns></returns>
+        // Token: 0x06000029 RID: 41 RVA: 0x000043B0 File Offset: 0x000025B0
         public static float var20p(float v)
         {
             return UnityEngine.Random.Range(v * 0.8f, v * 1.2f);
         }
+
+        // Token: 0x0600002A RID: 42 RVA: 0x000043D8 File Offset: 0x000025D8
         public static float var50p(float v)
         {
             return UnityEngine.Random.Range(v * 0.5f, v * 1.5f);
         }
 
+        // Token: 0x0600002B RID: 43 RVA: 0x000043FD File Offset: 0x000025FD
         internal static float var50p(object sio_baseTime)
         {
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// リストからランダムに１つピックアップ
-        /// </summary>
-        /// <param name="list"></param>
-        /// <param name="excludeIndex"></param>
-        /// <returns></returns>
+        // Token: 0x0600002C RID: 44 RVA: 0x00004408 File Offset: 0x00002608
         public static string pickOneOrEmptyString(List<string> list, int excludeIndex = -1)
-        //public static dynamic pickOneOrNull<T>(List<string> list, int excludeIndex = -1)    //プラグイン読み込み時にエラー
         {
-            if (list.Count == 0) return "";
-            return list[randomInt(0, list.Count - 1, excludeIndex)];
+            bool flag = list.Count == 0;
+            string result;
+            if (flag)
+            {
+                result = "";
+            }
+            else
+            {
+                result = list[Util.randomInt(0, list.Count - 1, excludeIndex)];
+            }
+            return result;
         }
 
-        /// <summary>
-        /// filepathからファイル内容を読み出し
-        /// </summary>
-        /// <param name="filepath"></param>
-        /// <returns></returns>
+        // Token: 0x0600002D RID: 45 RVA: 0x00004444 File Offset: 0x00002644
         public static string[] readAllText(string filepath)
         {
-            string[] csvTextAry;
             Util.debug(string.Format("文字列読み込み開始 {0}", filepath));
-            string csvContent = System.IO.File.ReadAllText(filepath);   //UTF-8のみ読み込み可能
-            csvTextAry = csvContent.Split(new string[] { "\r\n" }, StringSplitOptions.None);
-            if (csvTextAry.Length < 2)
+            string text = File.ReadAllText(filepath);
+            string[] array = text.Split(new string[]
             {
-                //改行コードが\nだった場合の保険
-                csvTextAry = csvContent.Split(new string[] { "\n" }, StringSplitOptions.None);
+                "\r\n"
+            }, StringSplitOptions.None);
+            bool flag = array.Length < 2;
+            if (flag)
+            {
+                array = text.Split(new string[]
+                {
+                    "\n"
+                }, StringSplitOptions.None);
             }
             Util.debug(string.Format("文字列読み込み終了 {0}", filepath));
-            return csvTextAry;
+            return array;
         }
 
-        /// <summary>
-        /// CSVファイル読み込み
-        /// 1行目・１列目は読み飛ばし、カンマ区切り
-        /// 2次元string配列で返す
-        /// </summary>
-        /// <param name="file">対象ファイルへのフルパス</param>
-        /// <returns></returns>
+        // Token: 0x0600002E RID: 46 RVA: 0x000044B8 File Offset: 0x000026B8
         public static string[][] ReadCsvFile(string file, bool enSkipFirstCol = true)
         {
-            string[] csvTextAry = readAllText(file);
-            List<string[]> csvData = new List<string[]>();
-
-            bool isReadedLabel = false;
-            foreach (string m in csvTextAry)
+            string[] array = Util.readAllText(file);
+            List<string[]> list = new List<string[]>();
+            bool flag = false;
+            foreach (string text in array)
             {
-                List<string> lineData = new List<string>();
-                //string m = sr.ReadLine();
-                int i = 0;
-
-                if (!isReadedLabel)
-                {   //１行目はラベルなので読み飛ばす
-                    isReadedLabel = true;
-                    continue;
-                }
-
-                string[] values;
-                if (enSkipFirstCol)
+                List<string> list2 = new List<string>();
+                int num = 0;
+                bool flag2 = !flag;
+                if (flag2)
                 {
-                    // 読み込んだ一行に対して、1列目を飛ばしてカンマ毎に分けて配列に格納する
-                    values = m.Split(',').Skip<string>(1).ToArray();
+                    flag = true;
                 }
                 else
                 {
-                    values = m.Split(',').ToArray();
-                }
-                // 出力する
-                foreach (string value in values)
-                {
-                    if (value != "")
+                    string[] array3;
+                    if (enSkipFirstCol)
                     {
-                        lineData.Add(value);
+                        array3 = text.Split(new char[]
+                        {
+                            ','
+                        }).Skip(1).ToArray<string>();
                     }
-                    else if (i <= 3 && value == "")
+                    else
                     {
-                        lineData.Add("0");
+                        array3 = text.Split(new char[]
+                        {
+                            ','
+                        }).ToArray<string>();
                     }
-                    ++i;
+                    foreach (string text2 in array3)
+                    {
+                        bool flag3 = text2 != "";
+                        if (flag3)
+                        {
+                            list2.Add(text2);
+                        }
+                        else
+                        {
+                            bool flag4 = num <= 3 && text2 == "";
+                            if (flag4)
+                            {
+                                list2.Add("0");
+                            }
+                        }
+                        num++;
+                    }
+                    list.Add(list2.ToArray());
                 }
-                csvData.Add(lineData.ToArray());
             }
             Util.debug(string.Format("文字配列へ分割終了 {0}", file));
-
-            return csvData.ToArray();
+            return list.ToArray();
         }
 
+        // Token: 0x04000032 RID: 50
+        private static string[] SucoreText = new string[]
+        {
+            "☆ ☆ ☆",
+            "★ ☆ ☆",
+            "★ ★ ☆",
+            "★ ★ ★"
+        };
 
+        // Token: 0x04000033 RID: 51
+        private static bool enSW = false;
+
+        // Token: 0x04000034 RID: 52
+        private static Stopwatch sw = new Stopwatch();
+
+        // Token: 0x04000035 RID: 53
+        private static readonly int stopwatch_executeFrames = 60;
+
+        // Token: 0x04000036 RID: 54
+        private static int sw_frames = 0;
     }
-
-
-    /// <summary>
-    /// Interpreterパターン
-    /// メイドさんの制御とインタラクティブなゲーム進行制御
-    /// </summary>
-    public class ScriplayContext
-    {
-        private ScriplayContext(string scriptName, bool finished = false)
-        {
-            this.scriptFinished = finished;
-            this.scriptName = scriptName;
-        }
-
-        /// <summary>
-        /// 初期化用Nullオブジェクト
-        /// </summary>
-        public static ScriplayContext None = new ScriplayContext(" - ", finished: true);
-
-
-        /// <summary>
-        /// ラベル名：行番号、ジャンプ時に使用
-        /// </summary>
-        IDictionary<string, int> labelMap = new Dictionary<string, int>();
-
-        /// <summary>
-        /// スクリプト全文
-        /// </summary>
-        string[] scriptArray = new string[0];
-
-        /// <summary>
-        /// 実行中の行の番号
-        /// </summary>
-        public int currentExecuteLine = -1;
-
-        private float waitSecond = 0f;
-
-        /// <summary>
-        /// スクリプト終了したか
-        /// </summary>
-        public bool scriptFinished
-        {
-            get { return this.scriptFinished_flag; }
-            set
-            {
-                this.scriptFinished_flag = value;
-                if (value) tearDown();
-            }
-        }
-        public bool scriptFinished_flag = false;
-
-
-        /// <summary>
-        /// 選択肢待ち時間
-        /// </summary>
-        private float selection_waitSecond = 0f;
-        /// <summary>
-        /// 選択肢　選択された項目
-        /// </summary>
-        public Selection selection_selectedItem = Selection.None;
-        /// <summary>
-        /// 選択肢　選択できる項目
-        /// </summary>
-        public List<Selection> selection_selectionList = new List<Selection>();
-
-        /// <summary>
-        /// talk　発言終わるまで待ち
-        /// key:maidNo, value:発言待ちか否か
-        /// </summary>
-        public Dictionary<int, bool> talk_waitUntilFinishSpeekingDict = new Dictionary<int, bool>();
-
-        /// <summary>
-        /// スクリプトのファイル名
-        /// </summary>
-        public readonly string scriptName = "";
-
-        /// <summary>
-        /// 表示領域に表示するテキスト
-        /// </summary>
-        public string showText = "";
-        private float showText_waitTime = -1f;
-
-        static Regex reg_comment = new Regex(@"^//.+", RegexOptions.IgnoreCase);     // //...　コメントアウト（を明示。解釈できない行はコメント同様実行されない）
-        static Regex reg_label = new Regex(@"^#+\s*(.+)", RegexOptions.IgnoreCase);      //#...　ジャンプ先ラベル
-
-        static Regex reg_scriptInfo = new Regex(@"^@info\s+(.+)", RegexOptions.IgnoreCase);   //@info version=1 ...  スクリプトへの注釈
-        static Regex reg_require = new Regex(@"^@require\s+(.+)", RegexOptions.IgnoreCase);   //@require maidNum=2           //スクリプトの実行条件　（未実装：manNum=1）
-        static Regex reg_auto = new Regex(@"^@auto\s+(.+)", RegexOptions.IgnoreCase);   //@auto auto1=じっくり auto2=ふつう             //autoモードの定義 auto1~9まで
-        static Regex reg_posRelative = new Regex(@"^@posRelative\s+(.+)", RegexOptions.IgnoreCase);   //@posRelative x=1 y=1 z=1       //メイド位置を相対位置で指定
-        static Regex reg_posAbsolute = new Regex(@"^@posAbsolute\s+(.+)", RegexOptions.IgnoreCase);   //@posAbsolute x=1 y=1 z=1       //メイド位置を絶対位置で指定
-        static Regex reg_rotRelative = new Regex(@"^@rotRelative\s+(.+)", RegexOptions.IgnoreCase);   //@rotRelative x=1 y=1 z=1       //メイド向きを相対角度（度）で指定
-        static Regex reg_rotAbsolute = new Regex(@"^@rotAbsolute\s+(.+)", RegexOptions.IgnoreCase);   //@rotAbsolute x=1 y=1 z=1       //メイド向きを相対角度（度）で指定
-        static Regex reg_sound = new Regex(@"^@sound\s+(.+)", RegexOptions.IgnoreCase);    //@sound name=xxx   / @sound category=xxx     //SE再生 name=stopで再生停止
-
-        static Regex reg_motion = new Regex(@"^@motion\s+(.+)", RegexOptions.IgnoreCase);    //@motion name=xxx   / @motion category=xxx     //モーション指定
-        static Regex reg_face = new Regex(@"^@face\s+(.+)", RegexOptions.IgnoreCase);        //@face maid=0 name=エロ我慢 頬=0 涙=0 よだれ=1 /@face category=xxx       //表情指定    hoho=0 namida=0 yodare=1 も可, hoho/namida:0~3,yodare:0~1
-        static Regex reg_wait = new Regex(@"^@wait\s+(.+)", RegexOptions.IgnoreCase);        //@wait 3sec                         //n秒待ち
-        static Regex reg_goto = new Regex(@"^@goto\s+(.+)", RegexOptions.IgnoreCase);        //@goto （ラベル名）                  //ラベルへジャンプ
-        static Regex reg_show = new Regex(@"^@show\s+(.+)", RegexOptions.IgnoreCase);        //@show text=（表示文字列） wait=3s                 //テキストを表示
-        static Regex reg_talk = new Regex(@"^@talk\s+(.+)", RegexOptions.IgnoreCase);        //@talk name=xxx finish=1 /@talk category=絶頂１                      //oncevoice発話, nameなしor name=stopで停止
-        static Regex reg_talkRepeat = new Regex(@"^@talkrepeat\s+(.+)", RegexOptions.IgnoreCase);        //@talkRepeat name=xxx     //loopvoice設定, nameなしor name=stopで停止
-        static Regex reg_selection = new Regex(@"^@selection\s*([^\s]+)?", RegexOptions.IgnoreCase);   //@selection wait=3sec...    //選択肢開始
-        static Regex reg_selectionItem = new Regex(@"[-]\s+([^\s]+)\s+(.+)", RegexOptions.IgnoreCase);   //- 選択肢名 goto=ジャンプ先ラベル (auto1Name)=90   //選択肢項目
-        static Regex reg_eyeToCam = new Regex(@"^@eyeToCam\s+(.+)", RegexOptions.IgnoreCase);    //@eyeToCam mode=no/auto/yes             //目線をカメラへ向けるか
-        static Regex reg_headToCam = new Regex(@"^@headToCam\s+(.+)", RegexOptions.IgnoreCase);    //@headToCam mode=no/auto/yes fade=1sec            //目線をカメラへ向けるか
-
-        /// <summary>
-        /// スクリプト終了時の処理
-        /// </summary>
-        private void tearDown()
-        {
-            selection_selectionList.Clear();
-            foreach (IMaid m in maidList)
-            {
-                m.change_stopVoice();
-            }
-            change_SE("");
-        }
-
-        public static ScriplayContext readScriptFile(string scriptName, string[] scriptArray)
-        {
-            ScriplayContext ret = new ScriplayContext(scriptName);
-            List<string> list = new List<string>(scriptArray);
-            list.Insert(0, "");                 //スクリプトの行番号とcurrentExecuteLineを合わせるためにダミー行挿入
-            scriptArray = list.ToArray();
-
-            ret.scriptArray = scriptArray;
-            foreach (string s in ret.scriptArray)
-            {
-                if (reg_scriptInfo.IsMatch(s))
-                {
-
-                    Util.info("スクリプトバージョンを検出しました");
-                    break;
-                }
-            }
-
-            //構文解析
-            for (int i = 0; i < ret.scriptArray.Length; i++)
-            {
-                string line = ret.scriptArray[i];
-                if (reg_label.IsMatch(line))
-                {
-                    //ラベルがあればlabelMapに追加
-                    Match matched = reg_label.Match(line);
-                    string labelStr = matched.Groups[1].Value;    //1 origin
-                    ret.labelMap.Add(labelStr, i);
-                }
-
-            }
-
-            return ret;
-        }
-
-        public static ScriplayContext readScriptFile(string filePath)
-        {
-            Util.info(string.Format("スクリプトファイル読み込み： {0}", filePath));
-            FileInfo fi1 = new FileInfo(filePath);
-            string[] contentArray = Util.readAllText(filePath);
-            return readScriptFile(fi1.Name, contentArray);
-        }
-
-
-
-        /// <summary>
-        /// 毎フレームスクリプトを実行
-        /// 空白行などは読み飛ばして、１フレームにつき1コマンド実行
-        /// </summary>
-        public void Update()
-        {
-            //最低実行条件：メイド１人以上表示中
-            if (maidList.Count == 0) return;
-
-            if (waitSecond > 0f)
-            {
-                //@wait　で待ちの場合
-                waitSecond -= Time.deltaTime;
-                return;
-            }
-            if (showText_waitTime > 0f)
-            {
-                //@show で待ちの場合
-                showText_waitTime -= Time.deltaTime;
-                if (showText_waitTime < 0f)
-                {
-                    showText = "";  //表示を解除
-                }
-                return;
-            }
-            if (selection_waitSecond > 0f)
-            {
-                //選択肢待ちの場合
-                selection_waitSecond -= Time.deltaTime;
-                if (selection_waitSecond < 0f)
-                {
-                    //時間切れ
-                    selection_selectionList = new List<Selection>();
-                    return; //次フレームからスクリプト処理開始
-                }
-
-                if (selection_selectedItem != Selection.None)
-                {
-                    exec_goto(selection_selectedItem.gotoLabel);
-                    selection_waitSecond = -1;
-                    selection_selectedItem = Selection.None;
-                    selection_selectionList.Clear();
-                    return; //次フレームからスクリプト処理開始
-                }
-                else
-                {
-                    //選択されるまで待つ
-                    return;
-                }
-            }
-            List<int> talk_wait_removeKeyList = new List<int>();
-            foreach (KeyValuePair<int, bool> kvp in talk_waitUntilFinishSpeekingDict)
-            {
-                //@talkの発言待ち
-                int maidNo = kvp.Key;
-                bool isWaiting = kvp.Value;
-                if (isWaiting)
-                {
-                    if (maidList[maidNo].isPlayingVoice())
-                    {
-                        return; //発言終わるまで待ち
-                    }
-                    else
-                    {
-                        talk_wait_removeKeyList.Add(maidNo);        //発言終わったら待ちを解除
-                    }
-                }
-            }
-            foreach (int i in talk_wait_removeKeyList)
-            {
-                talk_waitUntilFinishSpeekingDict.Remove(i);
-            }
-
-            //スクリプト1行ずつ実行
-            while (!scriptFinished)
-            {
-                currentExecuteLine++;
-                if (currentExecuteLine >= scriptArray.Length)
-                {
-                    //スクリプト終了
-                    this.scriptFinished = true;
-                    Util.info(string.Format("すべてのスクリプトを実行しました. 行数：{0},{1}", currentExecuteLine.ToString(), scriptName));
-                    return;
-                }
-                string line = scriptArray[currentExecuteLine];
-
-                //対象行の解釈
-                if (reg_comment.IsMatch(line))
-                {
-                    continue;
-                }
-                else if (reg_label.IsMatch(line))
-                {
-                    continue;
-                }
-                else if (reg_scriptInfo.IsMatch(line))
-                {
-                    continue;
-                }
-                else if (reg_require.IsMatch(line))
-                {
-                    exec_require(parseParameter(reg_require, line));
-                    return;
-                }
-                else if (reg_auto.IsMatch(line))
-                {
-                    var paramDict = parseParameter(reg_auto, line);
-                    for (int i = 1; i < 10; i++)
-                    {
-                        string key = "auto" + i.ToString();
-                        if (paramDict.ContainsKey(key))
-                        {
-                            autoModeList.Add(paramDict[key]);
-                        }
-                    }
-                }
-                else if (reg_posAbsolute.IsMatch(line))
-                {
-                    exec_posAbsolute(parseParameter(reg_posAbsolute, line));
-                    return;
-                }
-                else if (reg_posRelative.IsMatch(line))
-                {
-                    exec_posRelative(parseParameter(reg_posRelative, line));
-                    return;
-                }
-                else if (reg_rotAbsolute.IsMatch(line))
-                {
-                    exec_rotAbsolute(parseParameter(reg_rotAbsolute, line));
-                    return;
-                }
-                else if (reg_rotRelative.IsMatch(line))
-                {
-                    exec_rotRelative(parseParameter(reg_rotRelative, line));
-                    return;
-                }
-                else if (reg_show.IsMatch(line))
-                {
-                    exec_show(parseParameter(reg_show, line));
-                    return;
-                }
-                else if (reg_sound.IsMatch(line))
-                {
-                    exec_sound(parseParameter(reg_sound, line));
-                    return;
-                }
-                else if (reg_motion.IsMatch(line))
-                {
-                    exec_motion(parseParameter(reg_motion, line));
-                    return;
-                }
-                else if (reg_face.IsMatch(line))
-                {
-                    exec_face(parseParameter(reg_face, line));
-                    return;
-                }
-                else if (reg_wait.IsMatch(line))
-                {
-                    Match matched = reg_wait.Match(line);
-                    string waitStr = matched.Groups[1].Value;
-                    selection_waitSecond = parseFloat(waitStr, suffix: new string[] { "sec", "s" });
-                    return;
-                }
-                else if (reg_goto.IsMatch(line))
-                {
-                    //goto　-------------------------------------
-                    Match matched = reg_goto.Match(line);
-                    string gotoLabel = matched.Groups[1].Value;
-                    exec_goto(gotoLabel);
-                }
-                else if (reg_talk.IsMatch(line))
-                {
-                    //talk　-------------------------------------
-                    exec_talk(parseParameter(reg_talk, line), lineNo: currentExecuteLine);
-                    return;
-                }
-                else if (reg_talkRepeat.IsMatch(line))
-                {
-                    //talkrepeat　-------------------------------------
-                    exec_talk(parseParameter(reg_talkRepeat, line), loop: true, lineNo: currentExecuteLine);
-                    return;
-                }
-                else if (reg_eyeToCam.IsMatch(line))
-                {
-                    exec_eyeToCam(parseParameter(reg_eyeToCam, line));
-                    return;
-                }
-                else if (reg_headToCam.IsMatch(line))
-                {
-                    exec_headToCam(parseParameter(reg_headToCam, line));
-                    return;
-                }
-                else if (reg_selection.IsMatch(line))
-                {
-                    //選択肢-------------------------------------
-                    var paramDict = parseParameter(reg_selection, line);
-                    if (paramDict.ContainsKey(key_wait))
-                    {
-                        selection_waitSecond = parseFloat(paramDict[key_wait], suffix: new string[] { "sec", "s" });
-                    }
-                    else
-                    {
-                        //待ち時間 指定ないときは表示したままにする
-                        selection_waitSecond = 60 * 60 * 24 * 365f;
-                    }
-
-                    //各選択肢を読む
-                    while (true)
-                    {
-                        //次の行が選択肢でなければ終了
-                        int nextLine = currentExecuteLine + 1;
-                        if (nextLine >= scriptArray.Length || !reg_selectionItem.IsMatch(scriptArray[nextLine])) break;
-
-                        //次の行へ進んで選択肢追加処理
-                        currentExecuteLine++;
-                        line = scriptArray[currentExecuteLine];
-                        Match matched = reg_selectionItem.Match(line);
-                        string itemStr = matched.Groups[1].Value;
-                        string paramStr = matched.Groups[2].Value;
-                        paramDict = parseParameter(paramStr);
-
-                        addSelection(itemStr, paramDict);
-                    }
-                    //次フレームから選択肢待ち
-                    return;
-
-                }
-                else if (line == "")
-                {
-                    continue;
-                }
-                else
-                {
-                    //解釈できない行は読み飛ばし
-                    Util.info(string.Format("解釈できませんでした：{0}:{1}", currentExecuteLine.ToString(), line));
-                }
-
-            }
-        }
-
-        private void exec_eyeToCam(Dictionary<string, string> paramDict)
-        {
-
-            Util.debug(string.Format("line{0} : eyeToCam ", currentExecuteLine.ToString()));
-            List<IMaid> maidList = selectMaid(paramDict);
-            foreach (IMaid maid in maidList)
-            {
-
-                IMaid.EyeHeadToCamState state = IMaid.EyeHeadToCamState.Auto;
-
-                if (paramDict.ContainsKey(key_mode))
-                {
-                    string mode = paramDict[key_mode].ToLower();
-                    if (mode == IMaid.EyeHeadToCamState.Auto.viewStr)
-                    {
-                        state = IMaid.EyeHeadToCamState.Auto;
-
-                    }
-                    else if (mode == IMaid.EyeHeadToCamState.Yes.viewStr)
-                    {
-                        state = IMaid.EyeHeadToCamState.Yes;
-
-                    }
-                    else if (mode == IMaid.EyeHeadToCamState.No.viewStr)
-                    {
-                        state = IMaid.EyeHeadToCamState.No;
-
-                    }
-                    else
-                    {
-                        Util.info(string.Format("line{0} : モード指定が不適切です:{1}", currentExecuteLine.ToString(), mode));
-                    }
-                }
-                else
-                {
-                    Util.info(string.Format("line{0} : モードが指定されていません", currentExecuteLine.ToString()));
-                }
-                maid.change_eyeToCam(state);
-            }
-        }
-
-        private void exec_headToCam(Dictionary<string, string> paramDict)
-        {
-            Util.debug(string.Format("line{0} : headToCam ", currentExecuteLine.ToString()));
-            List<IMaid> maidList = selectMaid(paramDict);
-            foreach (IMaid maid in maidList)
-            {
-
-                IMaid.EyeHeadToCamState state = IMaid.EyeHeadToCamState.Auto;
-                float fadeSec = -1f;
-                if (paramDict.ContainsKey(key_mode))
-                {
-                    string mode = paramDict[key_mode].ToLower();
-                    if (mode == IMaid.EyeHeadToCamState.Auto.viewStr)
-                    {
-                        state = IMaid.EyeHeadToCamState.Auto;
-                    }
-                    else if (mode == IMaid.EyeHeadToCamState.Yes.viewStr)
-                    {
-                        state = IMaid.EyeHeadToCamState.Yes;
-                    }
-                    else if (mode == IMaid.EyeHeadToCamState.No.viewStr)
-                    {
-                        state = IMaid.EyeHeadToCamState.No;
-                    }
-                    else
-                    {
-                        Util.info(string.Format("line{0} : モード指定が不適切です:{1}", currentExecuteLine.ToString(), mode));
-                    }
-
-                }
-                else
-                {
-                    Util.info(string.Format("line{0} : モードが指定されていません", currentExecuteLine.ToString()));
-                }
-
-                if (paramDict.ContainsKey(key_fade))
-                {
-                    fadeSec = parseFloat(paramDict[key_fade], new string[] { "sec", "s" });
-                    maid.change_headToCam(state, fadeSec: fadeSec);
-                    return;
-                }
-                else
-                {
-                    maid.change_headToCam(state);
-                    return;
-                }
-            }
-        }
-
-
-
-        /// <summary>
-        /// コマンドのパラメータ文字列を解釈して辞書を返す
-        /// ex.
-        /// @command key1=value1...
-        /// </summary>
-        /// <param name="reg"></param>
-        /// <param name="lineStr"></param>
-        /// <returns></returns>
-        private Dictionary<string, string> parseParameter(Regex reg, string lineStr)
-        {
-            string paramStr = "";
-            if (!reg.IsMatch(lineStr)) return new Dictionary<string, string>();
-
-            paramStr = reg.Match(lineStr).Groups[1].Value;
-            return parseParameter(paramStr);
-        }
-        /// <summary>
-        /// コマンドのパラメータ文字列を解釈して辞書を返す
-        /// パラメータ形式：
-        /// ex. key1=value1 key2=value2
-        /// </summary>
-        /// <param name="paramStr"></param>
-        /// <returns></returns>
-        private Dictionary<string, string> parseParameter(string paramStr)
-        {
-            Dictionary<string, string> ret = new Dictionary<string, string>();
-            paramStr = parseParameter_regex.Replace(paramStr, " "); //複数かもしれない空白文字を１つへ
-            paramStr = parseParameter_regex_header.Replace(paramStr, ""); //先頭空白除去
-            paramStr = parseParameter_regex_footer.Replace(paramStr, ""); //後方空白除去
-            string[] ss = paramStr.Split(' ');
-            foreach (string s in ss)
-            {
-                string[] kv = s.Split('=');
-                if (kv.Length != 2)
-                {
-                    Util.info(string.Format("line{0} : パラメータを読み込めませんでした。「key=value」形式になっていますか？ : {1}", currentExecuteLine.ToString(), s));
-                    continue;
-                }
-                ret.Add(kv[0], kv[1]);
-            }
-            return ret;
-        }
-
-        static Regex parseParameter_regex = new Regex(@"\s+");
-        static Regex parseParameter_regex_header = new Regex(@"^\s+");
-        static Regex parseParameter_regex_footer = new Regex(@"\s+$");
-
-        private List<string> autoModeList = new List<string>();
-
-
-        /// <summary>
-        /// 数値文字列を解釈。除去する接尾辞（単位 sec,sなど）を除去順に列挙のこと
-        /// だめならログ出力
-        /// </summary>
-        /// <param name="floatStr"></param>
-        /// <param name="suffix"></param>
-        /// <returns></returns>
-        private float parseFloat(string floatStr, string[] suffix = null)
-        {
-            float ret = -1;
-            if (suffix != null)
-            {
-                floatStr = floatStr.ToLower();
-                foreach (string s in suffix)
-                {
-                    floatStr = floatStr.Replace(s, "");
-                }
-            }
-            try
-            {
-                ret = float.Parse(floatStr);
-            }
-            catch (Exception e)
-            {
-                Util.info(string.Format("line{0} : 数値を読み込めませんでした : {1}", currentExecuteLine.ToString(), floatStr));
-                Util.debug(e.StackTrace);
-            }
-            return ret;
-        }
-
-        private void exec_sound(Dictionary<string, string> paramDict)
-        {
-            Util.debug(string.Format("line{0} : sound ", currentExecuteLine.ToString()));
-            if (paramDict.ContainsKey(key_name))
-            {
-                string name = paramDict[key_name];
-                if (name == "stop") name = "";
-                change_SE(name);
-            }
-            else
-            {
-                //nameパラメータなしなら再生停止
-                change_SE("");
-            }
-        }
-
-        private void exec_require(Dictionary<string, string> paramDict)
-        {
-            if (paramDict.ContainsKey(key_maidNum))
-            {
-                int maidNum = (int)parseFloat(paramDict[key_maidNum]);
-                if (maidList.Count < maidNum)
-                {
-                    string mes = string.Format("メイドさんが{0}人以上必要です", maidNum);
-                    toast(mes);
-                    Util.info(mes);
-                    scriptFinished = true;
-                    return;
-                }
-            }
-            //if (paramDict.ContainsKey(key_manNum))
-            //{
-            //    int manNum = (int)parseFloat(paramDict[key_manNum]);
-            //    if (manList.Count < manNum)
-            //    {
-            //        string mes = string.Format("ご主人様が{0}人以上必要です", manNum);
-            //        toast(mes);
-            //        Util.info(mes);
-            //        scriptFinished = true;
-            //        return;
-            //    }
-            //}
-        }
-
-        private void exec_motion(Dictionary<string, string> paramDict)
-        {
-            Util.debug(string.Format("line{0} : motion ", currentExecuteLine.ToString()));
-            List<IMaid> maidList = selectMaid(paramDict);
-            foreach (IMaid maid in maidList)
-            {
-
-                if (paramDict.ContainsKey(key_name))
-                {
-                    maid.change_Motion(paramDict[key_name], isLoop: true);
-                }
-                else if (paramDict.ContainsKey(key_category))
-                {
-                    List<MotionInfo> motionList = MotionTable.queryTable_motionNameBase(paramDict[key_category]);
-                    maid.change_Motion(motionList, isLoop: true);
-                }
-                else
-                {
-                    Util.info(string.Format("line{0} : モーションが指定されていません", currentExecuteLine.ToString()));
-                }
-            }
-        }
-
-        private void exec_face(Dictionary<string, string> paramDict)
-        {
-            Util.debug(string.Format("line{0} : face ", currentExecuteLine.ToString()));
-            List<IMaid> maidList = selectMaid(paramDict);
-            foreach (IMaid maid in maidList)
-            {
-
-                float fadeTime = -1f;
-                if (paramDict.ContainsKey(key_fade)) fadeTime = parseFloat(paramDict[key_fade], new string[] { "sec", "s" });
-                if (paramDict.ContainsKey(key_name))
-                {
-                    string name = paramDict[key_name];
-                    if (fadeTime == -1f)
-                    {
-                        maid.change_faceAnime(name);
-                    }
-                    else
-                    {
-                        maid.change_faceAnime(name, fadeTime);
-                    }
-                }
-                else if (paramDict.ContainsKey(key_category))
-                {
-                    List<string> faceList = FaceTable.queryTable(paramDict[key_category]);
-                    if (fadeTime == -1f)
-                    {
-                        maid.change_faceAnime(faceList);
-                    }
-                    else
-                    {
-                        maid.change_faceAnime(faceList, fadeTime);
-                    }
-                }
-
-                int hoho = -1;
-                int namida = -1;
-                bool yodare = false;
-                if (paramDict.ContainsKey(key_namida) || paramDict.ContainsKey(key_涙))
-                {
-                    if (paramDict.ContainsKey(key_namida)) namida = (int)parseFloat(paramDict[key_namida]);
-                    if (paramDict.ContainsKey(key_涙)) namida = (int)parseFloat(paramDict[key_涙]);
-                    if (namida < 0 || namida > 3)
-                    {
-                        Util.info(string.Format("line{0} : 涙の値は0~3である必要があります。強制的に0にします。", currentExecuteLine.ToString()));
-                        namida = 0;
-                    }
-                }
-                if (paramDict.ContainsKey(key_hoho) || paramDict.ContainsKey(key_頬))
-                {
-                    if (paramDict.ContainsKey(key_hoho)) hoho = (int)parseFloat(paramDict[key_hoho]);
-                    if (paramDict.ContainsKey(key_頬)) hoho = (int)parseFloat(paramDict[key_頬]);
-                    if (hoho < 0 || hoho > 3)
-                    {
-                        Util.info(string.Format("line{0} : 頬の値は0~3である必要があります。強制的に0にします。", currentExecuteLine.ToString()));
-                        hoho = 0;
-                    }
-                }
-                if (paramDict.ContainsKey(key_yodare) || paramDict.ContainsKey(key_よだれ))
-                {
-                    int yodareInt = -1;
-                    if (paramDict.ContainsKey(key_yodare)) yodareInt = (int)parseFloat(paramDict[key_yodare]);
-                    if (paramDict.ContainsKey(key_頬)) yodareInt = (int)parseFloat(paramDict[key_頬]);
-                    if (yodareInt == 1) yodare = true;
-                    maid.change_FaceBlend(enableYodare: yodare);
-                }
-                maid.change_FaceBlend(hoho: hoho, namida: namida, enableYodare: yodare);
-            }
-        }
-
-
-        private void exec_posRelative(Dictionary<string, string> paramDict)
-        {
-            List<IMaid> maidList = selectMaid(paramDict);
-            foreach (IMaid maid in maidList)
-            {
-
-                float x = 0;
-                float y = 0;
-                float z = 0;
-                if (paramDict.ContainsKey(key_x))
-                {
-                    x = parseFloat(paramDict[key_x]);
-                }
-                if (paramDict.ContainsKey(key_y))
-                {
-                    y = parseFloat(paramDict[key_y]);
-                }
-                if (paramDict.ContainsKey(key_z))
-                {
-                    z = parseFloat(paramDict[key_z]);
-                }
-                maid.change_positionRelative(x, y, z);
-            }
-        }
-
-        private void exec_rotRelative(Dictionary<string, string> paramDict)
-        {
-            List<IMaid> maidList = selectMaid(paramDict);
-            foreach (IMaid maid in maidList)
-            {
-                float x = 0;
-                float y = 0;
-                float z = 0;
-                if (paramDict.ContainsKey(key_x))
-                {
-                    x = parseFloat(paramDict[key_x]);
-                }
-                if (paramDict.ContainsKey(key_y))
-                {
-                    y = parseFloat(paramDict[key_y]);
-                }
-                if (paramDict.ContainsKey(key_z))
-                {
-                    z = parseFloat(paramDict[key_z]);
-                }
-                maid.change_angleRelative(x, y, z);
-            }
-        }
-
-
-        private void exec_posAbsolute(Dictionary<string, string> paramDict)
-        {
-            List<IMaid> maidList = selectMaid(paramDict);
-            foreach (IMaid maid in maidList)
-            {
-                bool keepX = true;
-                bool keepY = true;
-                bool keepZ = true;
-                float x = 0;
-                float y = 0;
-                float z = 0;
-                if (paramDict.ContainsKey(key_x))
-                {
-                    keepX = false;
-                    x = parseFloat(paramDict[key_x]);
-                }
-                if (paramDict.ContainsKey(key_y))
-                {
-                    keepY = false;
-                    y = parseFloat(paramDict[key_y]);
-                }
-                if (paramDict.ContainsKey(key_z))
-                {
-                    keepZ = false;
-                    z = parseFloat(paramDict[key_z]);
-                }
-                maid.change_positionAbsolute(x, y, z, keepX, keepY, keepZ);
-            }
-        }
-
-        private void exec_rotAbsolute(Dictionary<string, string> paramDict)
-        {
-            List<IMaid> maidList = selectMaid(paramDict);
-            foreach (IMaid maid in maidList)
-            {
-                bool keepX = true;
-                bool keepY = true;
-                bool keepZ = true;
-                float x = 0;
-                float y = 0;
-                float z = 0;
-                if (paramDict.ContainsKey(key_x))
-                {
-                    keepX = false;
-                    x = parseFloat(paramDict[key_x]);
-                }
-                if (paramDict.ContainsKey(key_y))
-                {
-                    keepY = false;
-                    y = parseFloat(paramDict[key_y]);
-                }
-                if (paramDict.ContainsKey(key_z))
-                {
-                    keepZ = false;
-                    z = parseFloat(paramDict[key_z]);
-                }
-                maid.change_angleAbsolute(x, y, z, keepX, keepY, keepZ);
-            }
-        }
-
-        const string key_maid = "maid";
-        const string key_name = "name";
-        const string key_category = "category";
-        const string key_mode = "mode";
-        const string key_fade = "fade";
-        const string key_wait = "wait";
-        const string key_finish = "finish";
-        const string key_goto = "goto";
-        const string key_maidNum = "maidNum";
-        const string key_manNum = "manNum";
-        const string key_text = "text";
-        const string key_hoho = "hoho";
-        const string key_namida = "namida";
-        const string key_yodare = "yodare";
-        const string key_頬 = "頬";
-        const string key_涙 = "涙";
-        const string key_よだれ = "よだれ";
-        const string key_x = "x";
-        const string key_y = "y";
-        const string key_z = "z";
-
-        private void exec_show(Dictionary<string, string> paramDict, int lineNo = -1)
-        {
-            Util.debug(string.Format("line{0} : show ", currentExecuteLine.ToString()));
-            if (paramDict.ContainsKey(key_text))
-            {
-                this.showText = paramDict[key_text];
-            }
-            else
-            {
-                Util.info(string.Format("line{0} : 表示するテキストが見つかりません", currentExecuteLine.ToString()));
-                return;
-            }
-            if (paramDict.ContainsKey(key_wait))
-            {
-                this.showText_waitTime = parseFloat(paramDict[key_wait], new string[] { "sec", "s" });
-            }
-            else
-            {
-                //文字数から自動計算　10文字1秒、最小で1秒
-                this.showText_waitTime = ((float)this.showText.Length) / 10f;
-                this.showText_waitTime = Math.Max(showText_waitTime, 1f);
-            }
-
-        }
-
-        /// <summary>
-        /// talk/talkrepeat　コマンドの実行
-        /// </summary>
-        /// <param name="paramStr"></param>
-        /// <param name="loop"></param>
-        /// <param name="lineNo"></param>
-        private void exec_talk(Dictionary<string, string> paramDict, bool loop = false, int lineNo = -1)
-        {
-            Util.debug(string.Format("line{0} : talk ", currentExecuteLine.ToString()));
-            List<IMaid> maidList = selectMaid(paramDict);
-
-            foreach (IMaid maid in maidList)
-            {
-                List<string> voiceList = new List<string>();
-                if (paramDict.ContainsKey(key_finish))
-                {
-                    if (paramDict[key_finish] == "1") talk_waitUntilFinishSpeekingDict[maid.maidNo] = true;
-                }
-
-                if (paramDict.ContainsKey(key_name))
-                {
-                    voiceList.Add(paramDict[key_name]);
-                }
-                else if (paramDict.ContainsKey(key_category))
-                {
-                    string voiceCategory = paramDict[key_category];
-                    if (loop)
-                    {
-                        voiceList = LoopVoiceTable.queryTable(maid.sPersonal, voiceCategory);
-                    }
-                    else
-                    {
-                        voiceList = OnceVoiceTable.queryTable(maid.sPersonal, voiceCategory);
-                    }
-                    if (voiceList.Count == 0)
-                    {
-                        Util.info(string.Format("line{0} : カテゴリのボイスが見つかりません。カテゴリ：{1}", currentExecuteLine.ToString(), voiceCategory));
-                        return;
-                    }
-                }
-                if (voiceList.Count == 0 | (voiceList.Count == 1 && voiceList[0].ToLower().Equals("stop")))
-                {
-                    //nameパラメータなしor name=stop　の場合は音声停止
-                    maid.change_stopVoice();
-                }
-                if (loop)
-                {
-                    maid.change_LoopVoice(voiceList);
-                }
-                else
-                {
-                    maid.change_onceVoice(voiceList);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 指定されたmaidNoのIMaidを返す
-        /// 指定なき場合はmaidNo.0のIMaidを返す
-        /// </summary>
-        /// <param name="paramDict"></param>
-        /// <returns></returns>
-        private List<IMaid> selectMaid(Dictionary<string, string> paramDict)
-        {
-            List<IMaid> ret = new List<IMaid>();
-            if (paramDict.ContainsKey(key_maid))
-            {
-                int maidNum = int.Parse(paramDict[key_maid]);
-                if (maidNum < ScriplayPlugin.maidList.Count)
-                {
-                    ret.Add(ScriplayPlugin.maidList[maidNum]);
-                }
-                else
-                {
-                    Util.info(string.Format("メイドは{0}人しか有効にしていません。maidNo.{1}は無効です", ScriplayPlugin.maidList.Count, maidNum));
-                }
-            }
-            else
-            {
-                ret = new List<IMaid>(ScriplayPlugin.maidList);
-            }
-            return ret;
-        }
-
-
-        /// <summary>
-        /// gotoコマンドの実行
-        /// 指定したラベルに対応した行へジャンプ
-        /// </summary>
-        /// <param name="gotoLabel"></param>
-        private void exec_goto(string gotoLabel)
-        {
-            if (!labelMap.ContainsKey(gotoLabel))
-            {
-                Util.info(string.Format("line{0} : ジャンプ先ラベルが見つかりません。ジャンプ先：{1}", currentExecuteLine.ToString(), gotoLabel));
-                scriptFinished = true;
-            }
-            currentExecuteLine = labelMap[gotoLabel];
-            Util.debug(string.Format("line{0} : 「{1}」へジャンプしました", currentExecuteLine.ToString(), gotoLabel));
-        }
-
-        /// <summary>
-        /// 選択肢項目を追加
-        /// </summary>
-        /// <param name="itemViewStr"></param>
-        public void addSelection(string itemViewStr, Dictionary<string, string> dict)
-        {
-            string gotoLabel = "";
-            if (dict.ContainsKey(key_goto)) gotoLabel = dict[key_goto];
-
-            //上記以外のキーはautomode名として解釈
-            Dictionary<string, int> autoProbDict = new Dictionary<string, int>();
-            foreach (string key in dict.Keys)
-            {
-                if (key.Equals(key_goto)) continue;
-
-                string auto_name = key;
-                int auto_prob;
-                try
-                {
-                    auto_prob = int.Parse(dict[key].Replace("%", ""));
-                    autoProbDict.Add(auto_name, auto_prob);
-                }
-                catch (Exception e)
-                {
-                    Util.info(string.Format("選択肢　自動選択確率の読み込みに失敗 : {0}, {1}, {2} \r\n {3}", itemViewStr, key, dict[key], e.StackTrace));
-                }
-            }
-
-            selection_selectionList.Add(new Selection(itemViewStr, gotoLabel, autoProbDict));
-            Util.debug(string.Format("選択肢「{0}」を追加", itemViewStr));
-        }
-
-        public class Selection
-        {
-            //Nullオブジェクト
-            public static readonly Selection None = new Selection("選択肢なし", "", new Dictionary<string, int>());
-
-            //フィールド一覧
-            public readonly string viewStr;
-            public readonly string gotoLabel;
-            public readonly Dictionary<string, int> autoProbDict;
-
-            //コンストラクタ
-            public Selection(string viewStr, string gotoLabel, Dictionary<string, int> autoProbDict)
-            {
-                this.viewStr = viewStr;
-                this.gotoLabel = gotoLabel;
-                this.autoProbDict = autoProbDict;
-            }
-        }
-    }
-
 }
-
-
