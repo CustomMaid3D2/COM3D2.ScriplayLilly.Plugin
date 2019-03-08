@@ -1272,24 +1272,24 @@ namespace COM3D2.Scriplay.Plugin
                     {
                         this.maid.body0.boEyeToCam = true;
                     }
-                    else
-                    {
-                        bool flag3 = this.eyeToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
-                        if (flag3)
-                        {
-                            this.eyeToCam_turnSec -= Time.deltaTime;
-                            bool flag4 = this.eyeToCam_turnSec > 0f;
-                            if (!flag4)
-                            {
-                                bool flag5 = UnityEngine.Random.Range(0, 100) < 50;
-                                if (flag5)
-                                {
-                                    this.maid.body0.boEyeToCam = !this.maid.body0.boEyeToCam;
-                                }
-                                this.eyeToCam_turnSec = (float)UnityEngine.Random.Range(6, 10);
-                            }
-                        }
-                    }
+                    //else
+                    //{
+                    //    bool flag3 = this.eyeToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                    //    if (flag3)
+                    //    {
+                    //        this.eyeToCam_turnSec -= Time.deltaTime;
+                    //        bool flag4 = this.eyeToCam_turnSec > 0f;
+                    //        if (!flag4)
+                    //        {
+                    //            bool flag5 = UnityEngine.Random.Range(0, 100) < 50;
+                    //            if (flag5)
+                    //            {
+                    //                this.maid.body0.boEyeToCam = !this.maid.body0.boEyeToCam;
+                    //            }
+                    //            this.eyeToCam_turnSec = (float)UnityEngine.Random.Range(6, 10);
+                    //        }
+                    //    }
+                    //}
                 }
             }
 
@@ -1308,36 +1308,36 @@ namespace COM3D2.Scriplay.Plugin
                     {
                         this.maid.body0.boHeadToCam = true;
                     }
-                    else
-                    {
-                        bool flag3 = this.headToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
-                        if (flag3)
-                        {
-                            this.headToCam_turnSec -= Time.deltaTime;
-                            bool flag4 = this.headToCam_turnSec > 0f;
-                            if (!flag4)
-                            {
-                                bool boHeadToCam = this.maid.body0.boHeadToCam;
-                                if (boHeadToCam)
-                                {
-                                    bool flag5 = UnityEngine.Random.Range(0, 100) < 70;
-                                    if (flag5)
-                                    {
-                                        this.maid.body0.boHeadToCam = !this.maid.body0.boHeadToCam;
-                                    }
-                                }
-                                else
-                                {
-                                    bool flag6 = UnityEngine.Random.Range(0, 100) < 30;
-                                    if (flag6)
-                                    {
-                                        this.maid.body0.boHeadToCam = !this.maid.body0.boHeadToCam;
-                                    }
-                                }
-                                this.headToCam_turnSec = (float)UnityEngine.Random.Range(6, 10);
-                            }
-                        }
-                    }
+                    //else
+                    //{
+                    //    bool flag3 = this.headToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                    //    if (flag3)
+                    //    {
+                    //        this.headToCam_turnSec -= Time.deltaTime;
+                    //        bool flag4 = this.headToCam_turnSec > 0f;
+                    //        if (!flag4)
+                    //        {
+                    //            bool boHeadToCam = this.maid.body0.boHeadToCam;
+                    //            if (boHeadToCam)
+                    //            {
+                    //                bool flag5 = UnityEngine.Random.Range(0, 100) < 70;
+                    //                if (flag5)
+                    //                {
+                    //                    this.maid.body0.boHeadToCam = !this.maid.body0.boHeadToCam;
+                    //                }
+                    //            }
+                    //            else
+                    //            {
+                    //                bool flag6 = UnityEngine.Random.Range(0, 100) < 30;
+                    //                if (flag6)
+                    //                {
+                    //                    this.maid.body0.boHeadToCam = !this.maid.body0.boHeadToCam;
+                    //                }
+                    //            }
+                    //            this.headToCam_turnSec = (float)UnityEngine.Random.Range(6, 10);
+                    //        }
+                    //    }
+                    //}
                 }
             }
 
