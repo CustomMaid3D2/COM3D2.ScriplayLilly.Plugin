@@ -23,7 +23,7 @@ namespace COM3D2.Scriplay.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("0.1.1.2")]
+    [PluginVersion("0.1.1.3")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
@@ -89,7 +89,7 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000005 RID: 5 RVA: 0x000022AC File Offset: 0x000004AC
         private void load_ConfigCsv()
         {
-            Util.info("CSVファイル読み込み");
+            Util.info("CSV 파일 가져 오기");
             ScriplayPlugin.OnceVoiceTable.init();
             ScriplayPlugin.LoopVoiceTable.init();
             ScriplayPlugin.MotionTable.init();
@@ -135,7 +135,7 @@ namespace COM3D2.Scriplay.Plugin
             bool flag5 = text == "\r\n";
             if (flag5)
             {
-                text = "（CSVファイルが見つかりませんでした）";
+                text = "（CSV 파일을 찾을 수 없습니다）";
             }
             Util.info(text);
             foreach (string item in ScriplayPlugin.MotionTable.getCategoryList())
@@ -147,7 +147,7 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000006 RID: 6 RVA: 0x00002498 File Offset: 0x00000698
         private void load_motionGameData(bool allLoad = true)
         {
-            Util.info("モーションファイル読み込み開始");
+            Util.info("모션 파일 읽기 시작");
             ScriplayPlugin.motionNameAllList.Clear();
             bool flag = !allLoad;
             if (flag)
@@ -188,7 +188,7 @@ namespace COM3D2.Scriplay.Plugin
             {
                 str = str + str2 + "\r\n";
             }
-            Util.info("モーションファイル読み込み終了");
+            Util.info("모션 파일 읽기 종료");
             foreach (string text in ScriplayPlugin.motionNameAllList)
             {
                 bool flag3 = text.Contains("zeccyou_f_once");
@@ -210,19 +210,23 @@ namespace COM3D2.Scriplay.Plugin
         {
         }
 
+
+
         // Token: 0x06000009 RID: 9 RVA: 0x000026C4 File Offset: 0x000008C4
         private void OnLevelWasLoaded(int level)
         {
-            bool flag = level == ScriplayPlugin.cfg.studioModeSceneLevel;
-            if (flag)
-            {
-                this.gameCfg_isPluginEnabledScene = true;
-                this.initMaidList();
-            }
-            else
-            {
-                this.gameCfg_isPluginEnabledScene = false;
-            }
+            this.initMaidList();
+            this.gameCfg_isPluginEnabledScene = true;
+            //bool flag = level == ScriplayPlugin.cfg.studioModeSceneLevel;
+            //if (flag)
+            //{
+            //    this.gameCfg_isPluginEnabledScene = true;
+            //    this.initMaidList();
+            //}
+            //else
+            //{
+            //    this.gameCfg_isPluginEnabledScene = false;
+            //}
         }
 
         // Token: 0x0600000A RID: 10 RVA: 0x00002700 File Offset: 0x00000900
@@ -390,7 +394,7 @@ namespace COM3D2.Scriplay.Plugin
                     ScriplayPlugin.maidList[0].maid.AudioMan.LoadPlay(text, 0f, false, false);
                 }
             }
-            GUILayout.Label("モーション再生", this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label("모션 재생", this.gsLabelSmall, new GUILayoutOption[0]);
             this.debug_playMotion = GUILayout.TextField(this.debug_playMotion, new GUILayoutOption[0]);
             bool flag8 = Event.current.keyCode == KeyCode.Return && this.debug_playMotion != "";
             if (flag8)
