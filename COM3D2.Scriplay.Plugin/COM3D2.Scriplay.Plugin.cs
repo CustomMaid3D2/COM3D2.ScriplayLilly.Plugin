@@ -353,7 +353,7 @@ namespace COM3D2.Scriplay.Plugin
                 if (flag4)
                 {
                     this.scripts_fullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.scriptsPath, "md");
-                    Util.info(string.Format("以下のスクリプトが見つかりました", new object[0]));
+                    Util.info(string.Format("다음 스크립트 발견", new object[0]));
                     foreach (string message in this.scripts_fullpathList)
                     {
                         Util.info(message);
@@ -412,7 +412,7 @@ namespace COM3D2.Scriplay.Plugin
                     Util.animate(ScriplayPlugin.maidList[0].maid, text2, true, 0.5f, 1f, false);
                 }
             }
-            GUILayout.Label("表情再生", this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label("표정 재생", this.gsLabelSmall, new GUILayoutOption[0]);
             this.debug_face = GUILayout.TextField(this.debug_face, new GUILayoutOption[0]);
             bool flag11 = Event.current.keyCode == KeyCode.Return && this.debug_face != "";
             if (flag11)
@@ -434,7 +434,7 @@ namespace COM3D2.Scriplay.Plugin
                     ScriplayPlugin.maidList[0].change_faceAnime(text3, -1f);
                 }
             }
-            GUILayout.Label("トースト再生", this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label("토스트 재생", this.gsLabelSmall, new GUILayoutOption[0]);
             this.debug_toast = GUILayout.TextField(this.debug_toast, new GUILayoutOption[0]);
             bool flag14 = Event.current.keyCode == KeyCode.Return && this.debug_toast != "";
             if (flag14)
@@ -456,11 +456,11 @@ namespace COM3D2.Scriplay.Plugin
                     ScriplayPlugin.toast(text4);
                 }
             }
-            GUILayout.Label("スクリプト実行", this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label("스크립트 실행", this.gsLabelSmall, new GUILayoutOption[0]);
             bool flag17 = !this.scriplayContext.scriptFinished;
             if (flag17)
             {
-                GUILayout.Label("\u3000（スクリプト実行中）", this.gsLabelSmall, new GUILayoutOption[0]);
+                GUILayout.Label("\u3000（스크립트 실행중）", this.gsLabelSmall, new GUILayoutOption[0]);
             }
             else
             {
@@ -468,7 +468,7 @@ namespace COM3D2.Scriplay.Plugin
                 bool flag18 = Event.current.keyCode == KeyCode.Return && this.debug_script != "";
                 if (flag18)
                 {
-                    this.scriplayContext = ScriplayContext.readScriptFile("スクリプト実行テスト", this.debug_script.Split(new string[]
+                    this.scriplayContext = ScriplayContext.readScriptFile("스크립트 실행 테스트", this.debug_script.Split(new string[]
                     {
                         "\r\n"
                     }, StringSplitOptions.None));
@@ -485,17 +485,17 @@ namespace COM3D2.Scriplay.Plugin
                     bool flag20 = GUILayout.Button(text5, this.gsButtonSmall, new GUILayoutOption[0]);
                     if (flag20)
                     {
-                        this.scriplayContext = ScriplayContext.readScriptFile("スクリプト実行テスト", text5.Split(new string[]
+                        this.scriplayContext = ScriplayContext.readScriptFile("스크립트 실행 테스트", text5.Split(new string[]
                         {
                             "\r\n"
                         }, StringSplitOptions.None));
                     }
                 }
             }
-            GUILayout.Label("各Table確認", this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label("각 Table 확인", this.gsLabelSmall, new GUILayoutOption[0]);
             GUILayout.BeginHorizontal(new GUILayoutOption[0]);
             GUILayout.Label("Personal", this.gsLabelSmall, new GUILayoutOption[0]);
-            GUILayout.Label((ScriplayPlugin.maidList.Count != 0) ? ScriplayPlugin.maidList[0].sPersonal : "メイドがロードされていません", this.gsLabelSmall, new GUILayoutOption[0]);
+            GUILayout.Label((ScriplayPlugin.maidList.Count != 0) ? ScriplayPlugin.maidList[0].sPersonal : "메이드가로드되지 않습니다", this.gsLabelSmall, new GUILayoutOption[0]);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal(new GUILayoutOption[0]);
             GUILayout.Label("Category", this.gsLabelSmall, new GUILayoutOption[0]);
@@ -533,7 +533,7 @@ namespace COM3D2.Scriplay.Plugin
                 {
                     stringBuilder3.Append(motionInfo.motionName + ",");
                 }
-                Util.info(string.Format("MotionTable\u3000クエリ結果 {0}  \r\n {1}", this.debug_ovtQueryMap["Category"], stringBuilder3.ToString()));
+                Util.info(string.Format("MotionTable\u3000쿼리 결과 {0}  \r\n {1}", this.debug_ovtQueryMap["Category"], stringBuilder3.ToString()));
             }
             bool flag24 = GUILayout.Button("Face", this.gsButtonSmall, new GUILayoutOption[0]);
             if (flag24)
@@ -544,7 +544,7 @@ namespace COM3D2.Scriplay.Plugin
                 {
                     stringBuilder4.Append(str3 + ",");
                 }
-                Util.info(string.Format("FaceTable\u3000クエリ結果 {0}  \r\n {1}", this.debug_ovtQueryMap["Category"], stringBuilder4.ToString()));
+                Util.info(string.Format("FaceTable\u3000쿼리 결과 {0}  \r\n {1}", this.debug_ovtQueryMap["Category"], stringBuilder4.ToString()));
             }
             GUILayout.EndHorizontal();
             bool flag25 = ScriplayPlugin.maidList.Count != 0;
@@ -556,7 +556,7 @@ namespace COM3D2.Scriplay.Plugin
                 Dictionary<string, string> dictionary = new Dictionary<string, string>();
                 dictionary.Add("性格", maid.sPersonal);
                 dictionary.Add("再生中ボイス", maid.getPlayingVoice());
-                dictionary.Add("再生中モーション", maid.getCurrentMotionName());
+                dictionary.Add("재생 중 모션", maid.getCurrentMotionName());
                 bool flag26 = GUILayout.Button("潮", this.gsButtonSmall, new GUILayoutOption[0]);
                 if (flag26)
                 {
