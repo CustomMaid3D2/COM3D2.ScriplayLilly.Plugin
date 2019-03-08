@@ -23,7 +23,7 @@ namespace COM3D2.Scriplay.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("0.1.1.4")]
+    [PluginVersion("0.1.1.5")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
@@ -249,15 +249,13 @@ namespace COM3D2.Scriplay.Plugin
                 {
                     this.node_main = GUI.Window(21, this.node_main, new GUI.WindowFunction(this.WindowCallback_mainUI), ScriplayPlugin.cfg.PluginName + " Main UI", guistyle);
                 }
-                //bool flag2 = !this.scriplayContext.scriptFinished;
-                //if (flag2)
+                if (!this.scriplayContext.scriptFinished)
                 {
                     this.node_showArea = GUI.Window(22, this.node_showArea, new GUI.WindowFunction(this.WindowCallback_showArea), "", guistyle);
                 }
                 //bool flag3 =  this.scriplayContext.scriptFinished;
                 //bool flag3 = this.en_showScripts && this.scriplayContext.scriptFinished;
-                bool flag3 = this.en_showScripts ;
-                if (flag3)
+                if (this.en_showScripts)
                 {
                     this.node_scripts = GUI.Window(23, this.node_scripts, new GUI.WindowFunction(this.WindowCallback_scriptsView), ScriplayPlugin.cfg.PluginName + "스크립트 목록", guistyle);
                 }
@@ -326,13 +324,6 @@ namespace COM3D2.Scriplay.Plugin
                     this.scriplayContext.selection_selectedItem = selection;
                 }
             }
-            //foreach (ScriplayContext.Selection s in scriplayContext.selection_selectionList)
-            //{
-            //    if (GUILayout.Button(s.viewStr, gsButton))
-            //    {
-            //        scriplayContext.selection_selectedItem = s;
-            //    }
-            //}
             GUILayout.EndScrollView();
             GUI.DragWindow();
         }
@@ -367,12 +358,10 @@ namespace COM3D2.Scriplay.Plugin
             {
                 this.load_ConfigCsv();
             }
-            bool flag3 = GUILayout.Button("Show Scripts", this.gsButtonSmall, new GUILayoutOption[0]);
-            if (flag3)
+            if (GUILayout.Button("Show Scripts", this.gsButtonSmall, new GUILayoutOption[0]))
             {
                 this.en_showScripts = !this.en_showScripts;
-                bool flag4 = this.en_showScripts;
-                if (flag4)
+                if (this.en_showScripts)
                 {
                   this.scripts_fullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.scriptsPath, "md");
                   Util.info(string.Format("다음 스크립트 발견", new object[0]));
@@ -605,8 +594,8 @@ namespace COM3D2.Scriplay.Plugin
                     this.initMaidList();
                 }
 
-                bool flag3 = !this.scriplayContext.scriptFinished;
-                if (flag3)
+
+                if (!this.scriplayContext.scriptFinished)
                 {
                     this.scriplayContext.Update();
                 }
@@ -2993,7 +2982,7 @@ namespace COM3D2.Scriplay.Plugin
                 bool flag2 = ScriplayPlugin.maidList.Count < num;
                 if (flag2)
                 {
-                    string message = string.Format("メイドさんが{0}人以上必要です", num);
+                    string message = string.Format("가정부가{0}사람 이상 필요합니다", num);
                     ScriplayPlugin.toast(message);
                     Util.info(message);
                     this.scriptFinished = true;
@@ -3389,11 +3378,11 @@ namespace COM3D2.Scriplay.Plugin
             bool flag = !this.labelMap.ContainsKey(gotoLabel);
             if (flag)
             {
-                Util.info(string.Format("line{0} : ジャンプ先ラベルが見つかりません。ジャンプ先：{1}", this.currentExecuteLine.ToString(), gotoLabel));
+                Util.info(string.Format("line{0} : 점프 레이블을 찾을 수 없습니다。점프：{1}", this.currentExecuteLine.ToString(), gotoLabel));
                 this.scriptFinished = true;
             }
             this.currentExecuteLine = this.labelMap[gotoLabel];
-            Util.debug(string.Format("line{0} : 「{1}」へジャンプしました", this.currentExecuteLine.ToString(), gotoLabel));
+            Util.debug(string.Format("line{0} : 「{1}」로 이동했습니다", this.currentExecuteLine.ToString(), gotoLabel));
         }
 
         // Token: 0x06000048 RID: 72 RVA: 0x00006204 File Offset: 0x00004404
