@@ -597,19 +597,21 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000011 RID: 17 RVA: 0x00003A84 File Offset: 0x00001C84
         public void Update()
         {
-            bool flag = !this.gameCfg_isPluginEnabledScene;
-            if (!flag)
+            //bool flag = !this.gameCfg_isPluginEnabledScene;
+            //if (!flag)
             {
                 bool flag2 = GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count) != null || (ScriplayPlugin.maidList.Count > 0 && GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count - 1) == null);
                 if (flag2)
                 {
                     this.initMaidList();
                 }
+
                 bool flag3 = !this.scriplayContext.scriptFinished;
                 if (flag3)
                 {
                     this.scriplayContext.Update();
                 }
+
                 foreach (ScriplayPlugin.IMaid maid in ScriplayPlugin.maidList)
                 {
                     Util.sw_start("");
@@ -715,7 +717,7 @@ namespace COM3D2.Scriplay.Plugin
         private bool gameCfg_isVREnabled = false;
 
         // Token: 0x0400000A RID: 10
-        private bool gameCfg_isPluginEnabledScene = false;
+        private bool gameCfg_isPluginEnabledScene = true;
 
         // Token: 0x0400000B RID: 11
         private static Dictionary<string, string> motionBaseRegexDefDic = new Dictionary<string, string>
@@ -2501,7 +2503,7 @@ namespace COM3D2.Scriplay.Plugin
                 bool flag = ScriplayContext.reg_scriptInfo.IsMatch(input);
                 if (flag)
                 {
-                    Util.info("スクリプトバージョンを検出しました");
+                    Util.info("스크립트 버전을 감지했습니다");
                     break;
                 }
             }
@@ -2522,7 +2524,7 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000035 RID: 53 RVA: 0x00004894 File Offset: 0x00002A94
         public static ScriplayContext readScriptFile(string filePath)
         {
-            Util.info(string.Format("スクリプトファイル読み込み： {0}", filePath));
+            Util.info(string.Format("스크립트 파일 읽기： {0}", filePath));
             FileInfo fileInfo = new FileInfo(filePath);
             string[] array = Util.readAllText(filePath);
             return ScriplayContext.readScriptFile(fileInfo.Name, array);
@@ -2603,6 +2605,7 @@ namespace COM3D2.Scriplay.Plugin
                                     break;
                                 }
                                 string text = this.scriptArray[this.currentExecuteLine];
+                                Util.info(text);// 라인값 확인
                                 bool flag11 = ScriplayContext.reg_comment.IsMatch(text);
                                 if (!flag11)
                                 {
