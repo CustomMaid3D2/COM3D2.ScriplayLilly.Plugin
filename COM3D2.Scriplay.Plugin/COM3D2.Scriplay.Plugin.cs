@@ -23,7 +23,7 @@ namespace COM3D2.Scriplay.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("0.1.1.5")]
+    [PluginVersion("0.1.1.6")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
@@ -40,7 +40,7 @@ namespace COM3D2.Scriplay.Plugin
                 if (!flag)
                 {
                     ScriplayPlugin.maidList.Add(new ScriplayPlugin.IMaid(i, maid));
-                    Util.info(string.Format("メイド「{0}」を検出しました", maid.status.fullNameJpStyle));
+                    Util.info(string.Format("메이드「{0}」를 발견했습니다", maid.status.fullNameJpStyle));
                 }
             }
             for (int j = 0; j < 6; j++)
@@ -50,7 +50,7 @@ namespace COM3D2.Scriplay.Plugin
                 if (!flag2)
                 {
                     ScriplayPlugin.manList.Add(new ScriplayPlugin.IMan(man));
-                    Util.info(string.Format("ご主人様「{0}」を検出しました", man.status.fullNameJpStyle));
+                    Util.info(string.Format("주인님「{0}」를 발견했습니다", man.status.fullNameJpStyle));
                 }
             }
             GameMain.Instance.SoundMgr.StopSe();
@@ -215,7 +215,8 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000009 RID: 9 RVA: 0x000026C4 File Offset: 0x000008C4
         private void OnLevelWasLoaded(int level)
         {
-            this.initMaidList();
+            if (GameMain.Instance.CharacterMgr.GetMaidCount()>0)
+                this.initMaidList();
             this.gameCfg_isPluginEnabledScene = true;
             //bool flag = level == ScriplayPlugin.cfg.studioModeSceneLevel;
             //if (flag)
@@ -3640,7 +3641,7 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x0600001E RID: 30 RVA: 0x00003FED File Offset: 0x000021ED
         public static void info(string message)
         {
-            Console.WriteLine("[Scriplay]" + Util.PluginMessage(message));
+            Console.WriteLine(Util.PluginMessage(message));
         }
 
         // Token: 0x0600001F RID: 31 RVA: 0x00004008 File Offset: 0x00002208
@@ -3649,14 +3650,14 @@ namespace COM3D2.Scriplay.Plugin
             bool debugMode = ScriplayPlugin.cfg.debugMode;
             if (debugMode)
             {
-                UnityEngine.Debug.Log("[Scriplay]" + Util.PluginMessage(message));
+                UnityEngine.Debug.Log(Util.PluginMessage(message));
             }
         }
 
         // Token: 0x06000020 RID: 32 RVA: 0x0000403C File Offset: 0x0000223C
         private static string PluginMessage(string originalMessage)
         {
-            return string.Format("{0} > {1}", ScriplayPlugin.cfg.PluginName, originalMessage);
+            return string.Format("[{0}] {1}", ScriplayPlugin.cfg.PluginName, originalMessage);
         }
 
         // Token: 0x06000021 RID: 33 RVA: 0x00004064 File Offset: 0x00002264
