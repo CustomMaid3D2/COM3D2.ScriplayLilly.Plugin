@@ -1062,9 +1062,8 @@ namespace COM3D2.Scriplay.Plugin
             // Token: 0x0600004E RID: 78 RVA: 0x00006680 File Offset: 0x00004880
             public string getPlayingVoice()
             {
-                bool flag = !this.maid.AudioMan.isPlay();
                 string result;
-                if (flag)
+                if (!this.maid.AudioMan.isPlay())
                 {
                     result = "";
                 }
@@ -1236,8 +1235,7 @@ namespace COM3D2.Scriplay.Plugin
                         this.loopVoiceBackuped = false;
                     }
                 }
-                bool flag3 = !this.isPlayingMotion();
-                if (flag3)
+                if (!this.isPlayingMotion())
                 {
                     List<ScriplayPlugin.IMaid.MotionAttribute> list = new List<ScriplayPlugin.IMaid.MotionAttribute>();
                     list.Add(ScriplayPlugin.IMaid.MotionAttribute.Taiki);
@@ -1405,14 +1403,12 @@ namespace COM3D2.Scriplay.Plugin
                 else
                 {
                     foreach (string text in ScriplayPlugin.motionNameAllList)
-                    {
-                        bool flag3 = !text.StartsWith(motionNameBase);
-                        if (!flag3)
+                    {                        
+                        if (text.StartsWith(motionNameBase))
                         {
                             foreach (string value in attributeList)
                             {
-                                bool flag4 = text.Contains(value);
-                                if (flag4)
+                                if (text.Contains(value))
                                 {
                                     list.Add(text);
                                     break;
@@ -1420,11 +1416,11 @@ namespace COM3D2.Scriplay.Plugin
                             }
                         }
                     }
-                    bool flag5 = list.Count == 0;
-                    if (flag5)
-                    {
-                        Util.info(string.Format("有効なモーションがありませんでした : {0} \r\n motionBaseName : {1}", this.maid.name, motionNameBase));
-                    }
+                    //bool flag5 = list.Count == 0;
+                    //if (flag5)
+                    //{
+                    //    Util.info(string.Format("유효한 모션이 없습니다 : {0} \r\n motionBaseName : {1}", this.maid.name, motionNameBase));
+                    //}
                     result = list;
                 }
                 return result;
