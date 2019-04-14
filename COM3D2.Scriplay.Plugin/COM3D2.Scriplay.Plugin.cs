@@ -29,7 +29,7 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
         private void initMaidList()
         {
-            Util.info("메이드 목록을 불러오는 시작");
+            //Util.info("메이드 목록을 불러오는 시작");
             ScriplayPlugin.maidList.Clear();
             ScriplayPlugin.manList.Clear();
             CharacterMgr characterMgr = GameMain.Instance.CharacterMgr;
@@ -40,7 +40,7 @@ namespace COM3D2.Scriplay.Plugin
                 if (!flag)
                 {
                     ScriplayPlugin.maidList.Add(new ScriplayPlugin.IMaid(i, maid));
-                    Util.info(string.Format("메이드「{0}」를 발견했습니다", maid.status.fullNameJpStyle));
+                    //Util.info(string.Format("메이드「{0}」를 발견했습니다", maid.status.fullNameJpStyle));
                 }
             }
             for (int j = 0; j < 6; j++)
@@ -50,7 +50,7 @@ namespace COM3D2.Scriplay.Plugin
                 if (!flag2)
                 {
                     ScriplayPlugin.manList.Add(new ScriplayPlugin.IMan(man));
-                    Util.info(string.Format("주인님「{0}」를 발견했습니다", man.status.fullNameJpStyle));
+                    //Util.info(string.Format("주인님「{0}」를 발견했습니다", man.status.fullNameJpStyle));
                 }
             }
             GameMain.Instance.SoundMgr.StopSe();
@@ -89,7 +89,7 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000005 RID: 5 RVA: 0x000022AC File Offset: 0x000004AC
         private void load_ConfigCsv()
         {
-            Util.info("CSV 파일 가져 오기");
+            //Util.info("CSV 파일 가져 오기");
             ScriplayPlugin.OnceVoiceTable.init();
             ScriplayPlugin.LoopVoiceTable.init();
             ScriplayPlugin.MotionTable.init();
@@ -101,7 +101,7 @@ namespace COM3D2.Scriplay.Plugin
             {
                 string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(text2);
                 text = text + fileNameWithoutExtension + "\r\\n";
-                Util.info(string.Format("CSV:{0}", fileNameWithoutExtension));
+                //Util.info(string.Format("CSV:{0}", fileNameWithoutExtension));
                 bool flag = fileNameWithoutExtension.Contains(ScriplayPlugin.cfg.motionListPrefix);
                 if (flag)
                 {
@@ -147,7 +147,7 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000006 RID: 6 RVA: 0x00002498 File Offset: 0x00000698
         private void load_motionGameData(bool allLoad = true)
         {
-            Util.info("모션 파일 읽기 시작");
+            //Util.info("모션 파일 읽기 시작");
             ScriplayPlugin.motionNameAllList.Clear();
             bool flag = !allLoad;
             if (flag)
@@ -188,7 +188,7 @@ namespace COM3D2.Scriplay.Plugin
             {
                 str = str + str2 + "\r\n";
             }
-            Util.info("모션 파일 읽기 종료");
+            //Util.info("모션 파일 읽기 종료");
             foreach (string text in ScriplayPlugin.motionNameAllList)
             {
                 bool flag3 = text.Contains("zeccyou_f_once");
@@ -365,10 +365,10 @@ namespace COM3D2.Scriplay.Plugin
                 if (this.en_showScripts)
                 {
                   this.scripts_fullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.scriptsPath, "md");
-                  Util.info(string.Format("다음 스크립트 발견", new object[0]));
+                  //Util.info(string.Format("다음 스크립트 발견", new object[0]));
                   foreach (string message in this.scripts_fullpathList)
                   {
-                      Util.info(message);
+                      //Util.info(message);
                   }
                 }
             }
