@@ -1367,7 +1367,7 @@ namespace COM3D2.Scriplay.Plugin
                         Regex key = keyValuePair.Key;
                         text = key.Replace(text, keyValuePair.Value);
                     }
-                    Util.debug(string.Format("getMotionNameBase {0} -> {1}", motionName, text));
+                    //Util.debug(string.Format("getMotionNameBase {0} -> {1}", motionName, text));
                     result = text;
                 }
                 return result;
@@ -1555,7 +1555,7 @@ namespace COM3D2.Scriplay.Plugin
                 num = Mathf.Clamp(num, 0, voiceList.Length - 1);
                 string text = voiceList[num];
                 this.maid.AudioMan.LoadPlay(text, 0f, false, isLoop);
-                string arg = isLoop ? "ループあり" : "ループなし";
+                string arg = isLoop ? "반복 있음" : "반복 없음";
                 Util.info(string.Format("ボイスを再生：{0}, {1}", text, arg));
                 return text;
             }
