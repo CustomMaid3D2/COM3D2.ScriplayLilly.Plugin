@@ -583,6 +583,8 @@ namespace COM3D2.Scriplay.Plugin
             GUI.DragWindow();
         }
 
+        int cnt_chg = 0;
+
         // Token: 0x06000011 RID: 17 RVA: 0x00003A84 File Offset: 0x00001C84
         public void Update()
         {
@@ -592,9 +594,11 @@ namespace COM3D2.Scriplay.Plugin
                 bool flag2 = GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count) != null || (ScriplayPlugin.maidList.Count > 0 && GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count - 1) == null);
                 if (flag2)
                 {
-                    this.initMaidList();
+                    if (ScriplayPlugin.maidList.Count- cnt_chg !=0)
+                        this.initMaidList();
+                    cnt_chg = ScriplayPlugin.maidList.Count;
                 }
-
+                
 
                 if (!this.scriplayContext.scriptFinished)
                 {
