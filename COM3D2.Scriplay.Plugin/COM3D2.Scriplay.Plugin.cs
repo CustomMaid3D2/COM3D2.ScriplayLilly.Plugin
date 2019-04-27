@@ -33,6 +33,7 @@ namespace COM3D2.Scriplay.Plugin
             ScriplayPlugin.maidList.Clear();
             ScriplayPlugin.manList.Clear();
             CharacterMgr characterMgr = GameMain.Instance.CharacterMgr;
+
             for (int i = 0; i < characterMgr.GetMaidCount(); i++)
             {
                 Maid maid = characterMgr.GetMaid(i);
@@ -43,6 +44,7 @@ namespace COM3D2.Scriplay.Plugin
                     //Util.info(string.Format("메이드「{0}」를 발견했습니다", maid.status.fullNameJpStyle));
                 }
             }
+
             for (int j = 0; j < 6; j++)
             {
                 Maid man = characterMgr.GetMan(j);
@@ -53,7 +55,8 @@ namespace COM3D2.Scriplay.Plugin
                     //Util.info(string.Format("주인님「{0}」를 발견했습니다", man.status.fullNameJpStyle));
                 }
             }
-            GameMain.Instance.SoundMgr.StopSe();
+            // 효과음 제거
+            // GameMain.Instance.SoundMgr.StopSe();
         }
 
         // Token: 0x06000002 RID: 2 RVA: 0x0000215C File Offset: 0x0000035C
@@ -349,6 +352,7 @@ namespace COM3D2.Scriplay.Plugin
         {
             GUILayout.Space(20f);
             GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+            //다시불러오기
             bool flag = GUILayout.Button("Reload Maid", this.gsButtonSmall, new GUILayoutOption[0]);
             if (flag)
             {
@@ -560,11 +564,11 @@ namespace COM3D2.Scriplay.Plugin
             if (flag25)
             {
                 ScriplayPlugin.IMaid maid = ScriplayPlugin.maidList[0];
-                GUILayout.Label("メインメイド状態", this.gsLabelSmall, new GUILayoutOption[0]);
+                GUILayout.Label("메인 메이드 상태", this.gsLabelSmall, new GUILayoutOption[0]);
                 GUILayout.BeginHorizontal(new GUILayoutOption[0]);
                 Dictionary<string, string> dictionary = new Dictionary<string, string>();
-                dictionary.Add("性格", maid.sPersonal);
-                dictionary.Add("再生中ボイス", maid.getPlayingVoice());
+                dictionary.Add("성격", maid.sPersonal);
+                dictionary.Add("재생 중 음성", maid.getPlayingVoice());
                 dictionary.Add("재생 중 모션", maid.getCurrentMotionName());
                 bool flag26 = GUILayout.Button("潮", this.gsButtonSmall, new GUILayoutOption[0]);
                 if (flag26)
@@ -610,8 +614,9 @@ namespace COM3D2.Scriplay.Plugin
                     Util.sw_start("");
                     maid.update_playing();
                     Util.sw_showTime("update_playing");
-                    maid.update_eyeToCam();
-                    maid.update_headToCam();
+                    // 메이드 로드시 시선 변경되는 현상 제거
+                    //maid.update_eyeToCam();
+                    //maid.update_headToCam();
                     Util.sw_showTime("update_eyeHeadCamera");
                     Util.sw_stop("");
                 }
@@ -1285,24 +1290,24 @@ namespace COM3D2.Scriplay.Plugin
                     {
                         this.maid.body0.boEyeToCam = true;
                     }
-                    //else
-                    //{
-                    //    bool flag3 = this.eyeToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
-                    //    if (flag3)
-                    //    {
-                    //        this.eyeToCam_turnSec -= Time.deltaTime;
-                    //        bool flag4 = this.eyeToCam_turnSec > 0f;
-                    //        if (!flag4)
-                    //        {
-                    //            bool flag5 = UnityEngine.Random.Range(0, 100) < 50;
-                    //            if (flag5)
-                    //            {
-                    //                this.maid.body0.boEyeToCam = !this.maid.body0.boEyeToCam;
-                    //            }
-                    //            this.eyeToCam_turnSec = (float)UnityEngine.Random.Range(6, 10);
-                    //        }
-                    //    }
-                    //}
+                    else
+                    {
+                        bool flag3 = this.eyeToCam_state == ScriplayPlugin.IMaid.EyeHeadToCamState.Auto;
+                        if (flag3)
+                        {
+                            this.eyeToCam_turnSec -= Time.deltaTime;
+                            bool flag4 = this.eyeToCam_turnSec > 0f;
+                            if (!flag4)
+                            {
+                                bool flag5 = UnityEngine.Random.Range(0, 100) < 50;
+                                if (flag5)
+                                {
+                                    this.maid.body0.boEyeToCam = !this.maid.body0.boEyeToCam;
+                                }
+                                this.eyeToCam_turnSec = (float)UnityEngine.Random.Range(6, 10);
+                            }
+                        }
+                    }
                 }
             }
 
