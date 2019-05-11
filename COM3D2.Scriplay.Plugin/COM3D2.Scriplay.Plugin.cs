@@ -23,7 +23,7 @@ namespace COM3D2.Scriplay.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("0.1.1.7")]
+    [PluginVersion("0.1.1.8")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
@@ -36,23 +36,38 @@ namespace COM3D2.Scriplay.Plugin
 
             for (int i = 0; i < characterMgr.GetMaidCount(); i++)
             {
-                Maid maid = characterMgr.GetMaid(i);
-                bool flag = !this.isMaidAvailable(maid);
-                if (!flag)
+                try
                 {
-                    ScriplayPlugin.maidList.Add(new ScriplayPlugin.IMaid(i, maid));
-                    //Util.info(string.Format("메이드「{0}」를 발견했습니다", maid.status.fullNameJpStyle));
+                    Maid maid = characterMgr.GetMaid(i);
+                    if (maid)
+                    {
+                        if (maid.Visible)
+                        {
+                            ScriplayPlugin.maidList.Add(new ScriplayPlugin.IMaid(i, maid));
+                            //Util.info(string.Format("메이드「{0}」를 발견했습니다", maid.status.fullNameJpStyle));
+                        }
+                    }
+                    else
+                    {
+                        Util.info("initMaidList : " + i + " 메이드 없음");
+                    }
+                }
+                catch (Exception)
+                {
+                    Util.info("initMaidList : " + i + " 메이드 없음");
                 }
             }
 
-            for (int j = 0; j < 6; j++)
+            for (int j = 0; j < characterMgr.GetManCount(); j++)
             {
                 Maid man = characterMgr.GetMan(j);
-                bool flag2 = !this.isMaidAvailable(man);
-                if (!flag2)
+                if (man)
                 {
-                    ScriplayPlugin.manList.Add(new ScriplayPlugin.IMan(man));
-                    //Util.info(string.Format("주인님「{0}」를 발견했습니다", man.status.fullNameJpStyle));
+                    if (man.Visible)
+                    {
+                        ScriplayPlugin.manList.Add(new ScriplayPlugin.IMan(man));
+                        //Util.info(string.Format("주인님「{0}」를 발견했습니다", man.status.fullNameJpStyle));
+                    } 
                 }
             }
             // 효과음 제거
@@ -218,7 +233,8 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000009 RID: 9 RVA: 0x000026C4 File Offset: 0x000008C4
         private void OnLevelWasLoaded(int level)
         {
-            if (GameMain.Instance.CharacterMgr.GetMaidCount()>0)
+            //이건 의미 없음
+            //if (GameMain.Instance.CharacterMgr.GetMaidCount()>0)
                 this.initMaidList();
             this.gameCfg_isPluginEnabledScene = true;
             //bool flag = level == ScriplayPlugin.cfg.studioModeSceneLevel;
@@ -595,13 +611,14 @@ namespace COM3D2.Scriplay.Plugin
             //bool flag = !this.gameCfg_isPluginEnabledScene;
             //if (!flag)
             {
-                bool flag2 = GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count) != null || (ScriplayPlugin.maidList.Count > 0 && GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count - 1) == null);
-                if (flag2)
-                {
-                    if (ScriplayPlugin.maidList.Count- cnt_chg !=0)
-                        this.initMaidList();
-                    cnt_chg = ScriplayPlugin.maidList.Count;
-                }
+                // 메이드 정보 현행화
+                //bool flag2 = GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count) != null || (ScriplayPlugin.maidList.Count > 0 && GameMain.Instance.CharacterMgr.GetMaid(ScriplayPlugin.maidList.Count - 1) == null);
+                //if (flag2)
+                //{
+                //    if (ScriplayPlugin.maidList.Count- cnt_chg !=0)
+                        //this.initMaidList();
+                //    cnt_chg = ScriplayPlugin.maidList.Count;
+                //}
                 
 
                 if (!this.scriplayContext.scriptFinished)
@@ -609,16 +626,23 @@ namespace COM3D2.Scriplay.Plugin
                     this.scriplayContext.Update();
                 }
 
-                foreach (ScriplayPlugin.IMaid maid in ScriplayPlugin.maidList)
+                try
                 {
-                    Util.sw_start("");
-                    maid.update_playing();
-                    Util.sw_showTime("update_playing");
-                    // 메이드 로드시 시선 변경되는 현상 제거
-                    //maid.update_eyeToCam();
-                    //maid.update_headToCam();
-                    Util.sw_showTime("update_eyeHeadCamera");
-                    Util.sw_stop("");
+                    foreach (ScriplayPlugin.IMaid maid in ScriplayPlugin.maidList)
+                    {
+                        Util.sw_start("");
+                        maid.update_playing();
+                        Util.sw_showTime("update_playing");
+                        // 메이드 로드시 시선 변경되는 현상 제거
+                        //maid.update_eyeToCam();
+                        //maid.update_headToCam();
+                        Util.sw_showTime("update_eyeHeadCamera");
+                        Util.sw_stop("");
+                    }
+                }
+                catch (Exception)
+                {
+                    this.initMaidList();
                 }
             }
         }
@@ -1053,7 +1077,8 @@ namespace COM3D2.Scriplay.Plugin
                 this.maid = maid;
                 this.sPersonal = maid.status.personal.uniqueName;
                 this.maidNo = maidNo;
-                this.maid.EyeToCamera(Maid.EyeMoveType.目と顔を向ける, 0.8f);
+                //메이드를 플러그인으로 불러올대 시선 변경되는 현상 제거
+                //this.maid.EyeToCamera(Maid.EyeMoveType.目と顔を向ける, 0.8f);
             }
 
             // Token: 0x0600004C RID: 76 RVA: 0x00006630 File Offset: 0x00004830
@@ -1234,8 +1259,7 @@ namespace COM3D2.Scriplay.Plugin
             // Token: 0x06000059 RID: 89 RVA: 0x00006B3C File Offset: 0x00004D3C
             public void update_playing()
             {
-                bool flag = this.loopVoiceBackuped;
-                if (flag)
+                if (this.loopVoiceBackuped)
                 {
                     bool flag2 = this.maid.AudioMan.audiosource.loop || (!this.maid.AudioMan.audiosource.loop && !this.maid.AudioMan.audiosource.isPlaying);
                     if (flag2)

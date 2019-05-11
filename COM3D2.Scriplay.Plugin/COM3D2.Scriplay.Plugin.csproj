@@ -40,8 +40,9 @@
     <Reference Include="Assembly-UnityScript-firstpass">
       <HintPath>D:\COM3D2\COM3D2x64_Data\Managed\Assembly-UnityScript-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="PluginExt">
-      <HintPath>D:\COM3D2\Sybaris\PluginExt.dll</HintPath>
+    <Reference Include="PluginExt, Version=0.3.0.33790, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\COM3D2\Sybaris\UnityInjector\PluginExt.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
