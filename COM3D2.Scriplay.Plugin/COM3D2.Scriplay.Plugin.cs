@@ -2760,16 +2760,26 @@ namespace COM3D2.Scriplay.Plugin
                                                     this.exec_face(this.parseParameter(ScriplayContext.reg_face, text));
                                                     break;
                                                 }
-                                                bool flag25 = ScriplayContext.reg_wait.IsMatch(text);
-                                                if (flag25)
+                                              
+                                                if (ScriplayContext.reg_wait.IsMatch(text))
                                                 {
                                                     Match match = ScriplayContext.reg_wait.Match(text);
+                                                    if (match.Success)
+                                                    {
                                                     string value2 = match.Groups[1].Value;
                                                     this.selection_waitSecond = this.parseFloat(value2, new string[]
                                                     {
                                                         "sec",
                                                         "s"
                                                     });
+                                                    }
+
+                                                    if (match.Success)
+                                                    {
+                                                    string value3 = match.Groups[2].Value;                                                    
+                                                        this.selection_waitSecond += (float)(new System.Random().NextDouble()* this.parseFloat(value3));
+                                                    }
+
                                                     break;
                                                 }
                                                 bool flag26 = ScriplayContext.reg_goto.IsMatch(text);
@@ -3590,7 +3600,7 @@ namespace COM3D2.Scriplay.Plugin
         private static Regex reg_face = new Regex("^@face\\s+(.+)", RegexOptions.IgnoreCase);
 
         // Token: 0x04000050 RID: 80
-        private static Regex reg_wait = new Regex("^@wait\\s+(.+)", RegexOptions.IgnoreCase);
+        private static Regex reg_wait = new Regex("^@wait\\s+(\\d+)\\s*(\\d+)?", RegexOptions.IgnoreCase);
 
         // Token: 0x04000051 RID: 81
         private static Regex reg_goto = new Regex("^@goto\\s+(.+)", RegexOptions.IgnoreCase);
