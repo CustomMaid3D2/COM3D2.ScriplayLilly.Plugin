@@ -49,12 +49,12 @@ namespace COM3D2.Scriplay.Plugin
                     }
                     else
                     {
-                        Util.info("initMaidList : " + i + " 메이드 없음");
+                        //Util.info("initMaidList : " + i + " 메이드 없음");
                     }
                 }
                 catch (Exception)
                 {
-                    Util.info("initMaidList : " + i + " 메이드 없음");
+                    //Util.info("initMaidList : " + i + " 메이드 없음");
                 }
             }
 
@@ -67,7 +67,7 @@ namespace COM3D2.Scriplay.Plugin
                     {
                         ScriplayPlugin.manList.Add(new ScriplayPlugin.IMan(man));
                         //Util.info(string.Format("주인님「{0}」를 발견했습니다", man.status.fullNameJpStyle));
-                    } 
+                    }
                 }
             }
             // 효과음 제거
@@ -235,7 +235,7 @@ namespace COM3D2.Scriplay.Plugin
         {
             //이건 의미 없음
             //if (GameMain.Instance.CharacterMgr.GetMaidCount()>0)
-                this.initMaidList();
+            this.initMaidList();
             this.gameCfg_isPluginEnabledScene = true;
             //bool flag = level == ScriplayPlugin.cfg.studioModeSceneLevel;
             //if (flag)
@@ -384,12 +384,12 @@ namespace COM3D2.Scriplay.Plugin
                 this.en_showScripts = !this.en_showScripts;
                 if (this.en_showScripts)
                 {
-                  this.scripts_fullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.scriptsPath, "md");
-                  //Util.info(string.Format("다음 스크립트 발견", new object[0]));
-                  foreach (string message in this.scripts_fullpathList)
-                  {
-                      //Util.info(message);
-                  }
+                    this.scripts_fullpathList = Util.getFileFullpathList(ScriplayPlugin.cfg.scriptsPath, "md");
+                    //Util.info(string.Format("다음 스크립트 발견", new object[0]));
+                    foreach (string message in this.scripts_fullpathList)
+                    {
+                        //Util.info(message);
+                    }
                 }
             }
             GUILayout.EndHorizontal();
@@ -553,8 +553,8 @@ namespace COM3D2.Scriplay.Plugin
                 }
                 Util.info(string.Format("LoopVoiceTable\u3000クエリ結果 {0},{1} \r\n {2}", this.debug_ovtQueryMap["Personal"], this.debug_ovtQueryMap["Category"], stringBuilder2.ToString()));
             }
-            bool flag23 = GUILayout.Button("Motion", this.gsButtonSmall, new GUILayoutOption[0]);
-            if (flag23)
+
+            if (GUILayout.Button("Motion", this.gsButtonSmall, new GUILayoutOption[0]))
             {
                 this.debug_ovtQueryMap["Personal"] = ScriplayPlugin.maidList[0].sPersonal;
                 StringBuilder stringBuilder3 = new StringBuilder();
@@ -562,8 +562,9 @@ namespace COM3D2.Scriplay.Plugin
                 {
                     stringBuilder3.Append(motionInfo.motionName + ",");
                 }
-                Util.info(string.Format("MotionTable\u3000쿼리 결과 {0}  \r\n {1}", this.debug_ovtQueryMap["Category"], stringBuilder3.ToString()));
+                Util.info(string.Format("MotionTable\u3000쿼리 결과 {0} , stringBuilder3 : {1}", this.debug_ovtQueryMap["Category"], stringBuilder3.ToString()));
             }
+
             bool flag24 = GUILayout.Button("Face", this.gsButtonSmall, new GUILayoutOption[0]);
             if (flag24)
             {
@@ -616,10 +617,10 @@ namespace COM3D2.Scriplay.Plugin
                 //if (flag2)
                 //{
                 //    if (ScriplayPlugin.maidList.Count- cnt_chg !=0)
-                        //this.initMaidList();
+                //this.initMaidList();
                 //    cnt_chg = ScriplayPlugin.maidList.Count;
                 //}
-                
+
 
                 if (!this.scriplayContext.scriptFinished)
                 {
@@ -1026,7 +1027,7 @@ namespace COM3D2.Scriplay.Plugin
         public class ScriplayConfig
         {
             // Token: 0x04000071 RID: 113
-            internal bool debugMode = true;
+            internal bool debugMode = false;
 
             // Token: 0x04000072 RID: 114
             internal readonly float faceAnimeFadeTime = 1f;
@@ -1436,7 +1437,7 @@ namespace COM3D2.Scriplay.Plugin
                 else
                 {
                     foreach (string text in ScriplayPlugin.motionNameAllList)
-                    {                        
+                    {
                         if (text.StartsWith(motionNameBase))
                         {
                             foreach (string value in attributeList)
@@ -1468,24 +1469,25 @@ namespace COM3D2.Scriplay.Plugin
             // Token: 0x06000062 RID: 98 RVA: 0x000070B4 File Offset: 0x000052B4
             public string change_Motion(string motionNameOrNameBase, bool isLoop = true, bool addQue = false, float motionSpeed = -1f, float fadeTime = -1f)
             {
-                bool flag = motionSpeed == -1f;
-                if (flag)
+                Util.debug("motionNameOrNameBase:"+motionNameOrNameBase+","+ this.getCurrentMotionName());
+
+                if (motionSpeed == -1f)
                 {
                     motionSpeed = Util.var20p(1f);
                 }
-                bool flag2 = fadeTime == -1f;
-                if (flag2)
+
+                if (fadeTime == -1f)
                 {
                     fadeTime = Util.var20p(0.8f);
                 }
-                bool flag3 = !motionNameOrNameBase.EndsWith(".anm");
-                if (flag3)
+
+                if (!motionNameOrNameBase.EndsWith(".anm"))
                 {
                     motionNameOrNameBase += ".anm";
                 }
-                bool flag4 = motionNameOrNameBase == this.getCurrentMotionName();
+
                 string result;
-                if (flag4)
+                if (motionNameOrNameBase == this.getCurrentMotionName())
                 {
                     result = motionNameOrNameBase;
                 }
@@ -1502,6 +1504,7 @@ namespace COM3D2.Scriplay.Plugin
             {
                 int excludeValue = motionList.IndexOf(this.getCurrentMotionName());
                 int index = Util.randomInt(0, motionList.Count - 1, excludeValue);
+                Util.debug("this.getCurrentMotionName()" + this.getCurrentMotionName());
                 return this.change_Motion(motionList[index], isLoop, enSelectForVibeState, -1f, -1f);
             }
 
@@ -1938,7 +1941,7 @@ namespace COM3D2.Scriplay.Plugin
                 List<string> result;
                 if (flag)
                 {
-                    Util.info(string.Format("{0}テーブルから「{1}」という名前の性格・カテゴリは見つかりませんでした", this.voiceType, uniqueSheetName));
+                    Util.info(string.Format("{0}テーブルから「{1}」라는 성격・카테고리를 찾을 수 없습니다", this.voiceType, uniqueSheetName));
                     result = list;
                 }
                 else
@@ -2041,6 +2044,11 @@ namespace COM3D2.Scriplay.Plugin
 
             // Token: 0x04000099 RID: 153
             public string motionName = "";
+
+            public void Debug()
+            {
+                Util.debug(category + ":" + motionName + ":" + DeltaY + ":" + AzimuthAngle + ":" + EnMotionChange + ":" + FrontReverse);
+            }
         }
 
         // Token: 0x0200000B RID: 11
@@ -2059,25 +2067,43 @@ namespace COM3D2.Scriplay.Plugin
             // Token: 0x06000080 RID: 128 RVA: 0x00007AE8 File Offset: 0x00005CE8
             public static void parse(string[][] csvContent, string filename = "")
             {
+
                 foreach (string[] array in csvContent)
                 {
-                    bool flag = array.Length - 1 < ScriplayPlugin.MotionTable.ColItem.maxColNo;
-                    if (!flag)
+                    //Util.debug("parse:array.Length:" + array.Length + " , maxColNo:" + ScriplayPlugin.MotionTable.ColItem.maxColNo);
+                    if (array.Length >= ScriplayPlugin.MotionTable.ColItem.maxColNo)
                     {
+
                         DataRow dataRow = ScriplayPlugin.MotionTable.motionTable.NewRow();
-                        foreach (ScriplayPlugin.MotionTable.ColItem colItem in ScriplayPlugin.MotionTable.ColItem.items)
+                        try
                         {
-                            bool flag2 = colItem.typeStr == "System.Boolean";
-                            if (flag2)
+                            foreach (ScriplayPlugin.MotionTable.ColItem colItem in ScriplayPlugin.MotionTable.ColItem.items)
                             {
-                                dataRow[colItem.colName] = (int.Parse(array[colItem.colNo]) != 0);
+                                if (colItem.typeStr == "System.Boolean")
+                                {
+                                    dataRow[colItem.colName] = (int.Parse(array[colItem.colNo]) != 0);
+                                }
+                                else
+                                {
+                                    dataRow[colItem.colName] = array[colItem.colNo];
+                                }
+                                //Util.debug("typeStr:" + colItem.typeStr + " , colName:" + colItem.colName + " , colNo:" + colItem.colNo + ", array:" + array[colItem.colNo]);
                             }
-                            else
+                            try
                             {
-                                dataRow[colItem.colName] = array[colItem.colNo];
+                                ScriplayPlugin.MotionTable.motionTable.Rows.Add(dataRow);
+                            }
+                            catch (Exception e)
+                            {
+                                Util.error("ScriplayPlugin.MotionTable.motionTable.Rows.Add(dataRow);");
                             }
                         }
-                        ScriplayPlugin.MotionTable.motionTable.Rows.Add(dataRow);
+                        catch (Exception)
+                        {
+                            Util.error("foreach (string[] array in csvContent)");
+                        }
+
+
                     }
                 }
             }
@@ -2085,18 +2111,46 @@ namespace COM3D2.Scriplay.Plugin
             // Token: 0x06000081 RID: 129 RVA: 0x00007BE4 File Offset: 0x00005DE4
             public static List<ScriplayPlugin.MotionInfo> queryTable_motionNameBase(string category, string maidState = "-")
             {
-                List<ScriplayPlugin.MotionInfo> list = ScriplayPlugin.MotionTable.query(category, maidState, "MotionTable 検索");
+                List<ScriplayPlugin.MotionInfo> list = ScriplayPlugin.MotionTable.query(category, maidState, "MotionTable 검색");
                 bool flag = list.Count == 0;
                 if (flag)
                 {
-                    list = ScriplayPlugin.MotionTable.query(category, "-", "MotionTable\u3000再検索\u3000MaidState「デフォルト」");
+                    list = ScriplayPlugin.MotionTable.query(category, "-", "MotionTable\u3000다시 검색\u3000MaidState「기본」");
                 }
                 return list;
             }
 
             // Token: 0x06000082 RID: 130 RVA: 0x00007C24 File Offset: 0x00005E24
-            private static List<ScriplayPlugin.MotionInfo> query(string category, string maidState = "-", string comment = "MotionTable 検索")
+            private static List<ScriplayPlugin.MotionInfo> query(string category, string maidState = "-", string comment = "MotionTable 검색")
             {
+                //foreach (DataColumn column in ScriplayPlugin.MotionTable.motionTable.Columns)
+                //   Console.WriteLine(column.ColumnName);
+                // Util.debug("query:ColumnNam:" + column.ColumnNam);
+
+                /*                
+                 *                DataRow[] array1 = ScriplayPlugin.MotionTable.motionTable.Select();
+                                int j = 0;
+                                foreach (DataRow dataRow in array1)
+                                {
+                                    StringBuilder stringBuilder = new StringBuilder();
+
+                                    try
+                                    {
+                                        stringBuilder.Append(",Category:" + dataRow[ScriplayPlugin.MotionTable.ColItem.Category.ordinal].ToString());
+                                        stringBuilder.Append(",MotionName:" + dataRow[ScriplayPlugin.MotionTable.ColItem.MotionName.ordinal].ToString());
+                                        stringBuilder.Append(",DeltaY:" + float.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.DeltaY.ordinal].ToString()));
+                                        stringBuilder.Append(",AzimuthAngle:" + float.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.AzimuthAngle.ordinal].ToString()));
+                                        stringBuilder.Append(",EnMotionChange:" + bool.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.EnMotionChange.ordinal].ToString()));
+                                        stringBuilder.Append(",FrontReverse:" + bool.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.FrontReverse.ordinal].ToString()));
+                                    }
+                                    catch (Exception)
+                                    {
+                                    }
+                                    Util.debug("query:dataRow:" + stringBuilder.ToString());
+                                    j++;
+                                }      
+                                */
+
                 string text = ScriplayPlugin.MotionTable.createCondition(category, maidState);
                 DataRow[] array = ScriplayPlugin.MotionTable.motionTable.Select(text);
                 List<ScriplayPlugin.MotionInfo> list = new List<ScriplayPlugin.MotionInfo>();
@@ -2104,22 +2158,25 @@ namespace COM3D2.Scriplay.Plugin
                 {
                     try
                     {
-                        list.Add(new ScriplayPlugin.MotionInfo
+                        MotionInfo motionInfo = new ScriplayPlugin.MotionInfo
                         {
                             category = dataRow[ScriplayPlugin.MotionTable.ColItem.Category.ordinal].ToString(),
+                            FrontReverse = bool.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.FrontReverse.ordinal].ToString()),
                             motionName = dataRow[ScriplayPlugin.MotionTable.ColItem.MotionName.ordinal].ToString(),
-                            DeltaY = float.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.DeltaY.ordinal].ToString()),
                             AzimuthAngle = float.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.AzimuthAngle.ordinal].ToString()),
-                            EnMotionChange = bool.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.EnMotionChange.ordinal].ToString()),
-                            FrontReverse = bool.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.FrontReverse.ordinal].ToString())
-                        });
+                            DeltaY = float.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.DeltaY.ordinal].ToString()),
+                            EnMotionChange = bool.Parse(dataRow[ScriplayPlugin.MotionTable.ColItem.EnMotionChange.ordinal].ToString())
+                        };
+                        //motionInfo.Debug();
+                        list.Add(motionInfo);
                     }
                     catch (Exception ex)
                     {
-                        Util.debug(string.Format("MotionTableから読み出し失敗:{0} \r\n エラー内容 : {1}", dataRow.ToString(), ex.StackTrace));
+                        Util.error(string.Format("MotionTable에서 읽기 실패:{0} \r\n 오류 내용 : {1}", dataRow.ToString(), ex.StackTrace));
                     }
                 }
-                Util.debug(string.Format("{0}\r\n  {1}\r\n  検索結果\r\n  {2}", comment, text, Util.list2Str<ScriplayPlugin.MotionInfo>(list)));
+                Util.debug("query:category:" + category + ", maidState:" + maidState + ", text:" + text + ", motionTable:" + motionTable.Select().Length + ", array:" + array.Length + " , comment:" + comment);
+                //Util.debug(string.Format("검색 결과 : {0}", Util.list2Str<ScriplayPlugin.MotionInfo>(list)));
                 return list;
             }
 
@@ -2128,8 +2185,7 @@ namespace COM3D2.Scriplay.Plugin
             {
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.Append(string.Format(" {0} = '{1}'", ScriplayPlugin.MotionTable.ColItem.Category.colName, category));
-                bool flag = maidState != "-";
-                if (flag)
+                if (maidState != "-")
                 {
                     bool flag2 = stringBuilder.Length != 0;
                     if (flag2)
@@ -2168,6 +2224,7 @@ namespace COM3D2.Scriplay.Plugin
                 // Token: 0x0600009B RID: 155 RVA: 0x000086C8 File Offset: 0x000068C8
                 private ColItem(int colNo, string colName, string typeStr)
                 {
+                    Util.debug("ColItem:colNo:" + colNo + "colName:" + colName + "typeStr:" + typeStr);
                     this.colName = colName;
                     this.typeStr = typeStr;
                     this.ordinal = ScriplayPlugin.MotionTable.ColItem.nextOrdinal;
@@ -2203,25 +2260,25 @@ namespace COM3D2.Scriplay.Plugin
                 public static int maxColNo = 0;
 
                 // Token: 0x040000D0 RID: 208
-                public static readonly ScriplayPlugin.MotionTable.ColItem Category = new ScriplayPlugin.MotionTable.ColItem(1, "カテゴリ", "System.String");
+                public static readonly ScriplayPlugin.MotionTable.ColItem Category = new ScriplayPlugin.MotionTable.ColItem(1, "Category", "System.String");
 
                 // Token: 0x040000D1 RID: 209
-                public static readonly ScriplayPlugin.MotionTable.ColItem FrontReverse = new ScriplayPlugin.MotionTable.ColItem(2, "正面反転？", "System.Boolean");
+                public static readonly ScriplayPlugin.MotionTable.ColItem FrontReverse = new ScriplayPlugin.MotionTable.ColItem(2, "FrontReverse", "System.Boolean");
 
                 // Token: 0x040000D2 RID: 210
-                public static readonly ScriplayPlugin.MotionTable.ColItem AzimuthAngle = new ScriplayPlugin.MotionTable.ColItem(3, "横回転角度", "System.Double");
+                public static readonly ScriplayPlugin.MotionTable.ColItem AzimuthAngle = new ScriplayPlugin.MotionTable.ColItem(3, "AzimuthAngle", "System.Double");
 
                 // Token: 0x040000D3 RID: 211
-                public static readonly ScriplayPlugin.MotionTable.ColItem DeltaY = new ScriplayPlugin.MotionTable.ColItem(4, "Y軸位置", "System.Double");
+                public static readonly ScriplayPlugin.MotionTable.ColItem DeltaY = new ScriplayPlugin.MotionTable.ColItem(4, "DeltaY", "System.Double");
 
                 // Token: 0x040000D4 RID: 212
-                public static readonly ScriplayPlugin.MotionTable.ColItem MaidState = new ScriplayPlugin.MotionTable.ColItem(5, "メイド状態", "System.String");
+                public static readonly ScriplayPlugin.MotionTable.ColItem MaidState = new ScriplayPlugin.MotionTable.ColItem(5, "MaidState", "System.String");
 
                 // Token: 0x040000D5 RID: 213
-                public static readonly ScriplayPlugin.MotionTable.ColItem EnMotionChange = new ScriplayPlugin.MotionTable.ColItem(6, "モーション変更許可", "System.Boolean");
+                public static readonly ScriplayPlugin.MotionTable.ColItem EnMotionChange = new ScriplayPlugin.MotionTable.ColItem(6, "EnMotionChange", "System.Boolean");
 
                 // Token: 0x040000D6 RID: 214
-                public static readonly ScriplayPlugin.MotionTable.ColItem MotionName = new ScriplayPlugin.MotionTable.ColItem(7, "モーションファイル名", "System.String");
+                public static readonly ScriplayPlugin.MotionTable.ColItem MotionName = new ScriplayPlugin.MotionTable.ColItem(7, "MotionName", "System.String");
             }
         }
 
@@ -2287,7 +2344,7 @@ namespace COM3D2.Scriplay.Plugin
                 List<string> result;
                 if (flag)
                 {
-                    Util.info(string.Format("表情テーブルから「{0}」という名前のカテゴリは見つかりませんでした", category));
+                    Util.info(string.Format("表情テーブルから「{0}」라는 범주를 찾을 수 없습니다", category));
                     result = list;
                 }
                 else
@@ -2300,7 +2357,7 @@ namespace COM3D2.Scriplay.Plugin
                     bool flag2 = list.Count == 0;
                     if (flag2)
                     {
-                        Util.info(string.Format("表情テーブルから「{0}」という名前のカテゴリは見つかりませんでした", category));
+                        Util.info(string.Format("표정 테이블에서「{0}」라는 범주를 찾을 수 없습니다", category));
                     }
                     result = list;
                 }
@@ -2574,7 +2631,7 @@ namespace COM3D2.Scriplay.Plugin
                         if (this.selection_waitSecond > 0f)
                         {
                             this.selection_waitSecond -= Time.deltaTime;
-                            if ( this.selection_waitSecond < 0f)
+                            if (this.selection_waitSecond < 0f)
                             {
                                 this.selection_selectionList = new List<ScriplayContext.Selection>();
                             }
@@ -2624,8 +2681,8 @@ namespace COM3D2.Scriplay.Plugin
                                 }
                                 string text = this.scriptArray[this.currentExecuteLine];
                                 Util.info(text);// 라인값 확인
-                                bool flag11 = ScriplayContext.reg_comment.IsMatch(text);
-                                if (!flag11)
+
+                                if (!ScriplayContext.reg_comment.IsMatch(text))
                                 {
                                     bool flag12 = ScriplayContext.reg_label.IsMatch(text);
                                     if (!flag12)
@@ -2639,8 +2696,8 @@ namespace COM3D2.Scriplay.Plugin
                                                 this.exec_require(this.parseParameter(ScriplayContext.reg_require, text));
                                                 break;
                                             }
-                                            bool flag15 = ScriplayContext.reg_auto.IsMatch(text);
-                                            if (flag15)
+
+                                            if (ScriplayContext.reg_auto.IsMatch(text))
                                             {
                                                 Dictionary<string, string> dictionary = this.parseParameter(ScriplayContext.reg_auto, text);
                                                 for (int i = 1; i < 10; i++)
@@ -2975,7 +3032,7 @@ namespace COM3D2.Scriplay.Plugin
             }
             catch (Exception ex)
             {
-                Util.info(string.Format("line{0} : 数値を読み込めませんでした : {1}", this.currentExecuteLine.ToString(), floatStr));
+                Util.error(string.Format("line{0} : 숫자를 읽을 수 없습니다 : {1}", this.currentExecuteLine.ToString(), floatStr));
                 Util.debug(ex.StackTrace);
             }
             return result;
@@ -3027,22 +3084,27 @@ namespace COM3D2.Scriplay.Plugin
             List<ScriplayPlugin.IMaid> list = this.selectMaid(paramDict);
             foreach (ScriplayPlugin.IMaid maid in list)
             {
-                bool flag = paramDict.ContainsKey("name");
-                if (flag)
+                if (paramDict.ContainsKey("name"))
                 {
+                    //Util.debug("exec_motion:paramDict[name]" + paramDict["name"]);
                     maid.change_Motion(paramDict["name"], true, false, -1f, -1f);
                 }
                 else
                 {
-                    bool flag2 = paramDict.ContainsKey("category");
-                    if (flag2)
+
+                    if (paramDict.ContainsKey("category"))
                     {
+                        //Util.debug("exec_motion:paramDict[category]" + paramDict["category"]);
+                        // 모션 목록 찿기
                         List<ScriplayPlugin.MotionInfo> motionList = ScriplayPlugin.MotionTable.queryTable_motionNameBase(paramDict["category"], "-");
-                        maid.change_Motion(motionList, true, true);
+                        //maid.change_Motion(motionList, true, true);
+                        string motionName = motionList[new System.Random().Next(motionList.Count)].motionName;
+                        Util.debug("exec_motion:motionName:" + motionName);
+                        maid.change_Motion(motionName, true, false, -1f, -1f);
                     }
                     else
                     {
-                        Util.info(string.Format("line{0} : モーションが指定されていません", this.currentExecuteLine.ToString()));
+                        Util.info(string.Format("line{0} : 모션이 지정되어 있지 않습니다", this.currentExecuteLine.ToString()));
                     }
                 }
             }
@@ -3356,7 +3418,7 @@ namespace COM3D2.Scriplay.Plugin
                         bool flag5 = list2.Count == 0;
                         if (flag5)
                         {
-                            Util.info(string.Format("line{0} : カテゴリのボイスが見つかりません。カテゴリ：{1}", this.currentExecuteLine.ToString(), text));
+                            Util.info(string.Format("line{0} : 카테고리의 음성을 찾을 수 없습니다。カテゴリ：{1}", this.currentExecuteLine.ToString(), text));
                             break;
                         }
                     }
@@ -3438,7 +3500,7 @@ namespace COM3D2.Scriplay.Plugin
                     }
                     catch (Exception ex)
                     {
-                        Util.info(string.Format("選択肢\u3000自動選択確率の読み込みに失敗 : {0}, {1}, {2} \r\n {3}", new object[]
+                        Util.info(string.Format("選択肢\u3000자동 선택 확률의로드 실패 : {0}, {1}, {2} \r\n {3}", new object[]
                         {
                             itemViewStr,
                             text,
@@ -3670,7 +3732,8 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x0600001E RID: 30 RVA: 0x00003FED File Offset: 0x000021ED
         public static void info(string message)
         {
-            Console.WriteLine(Util.PluginMessage(message));
+            //Console.WriteLine(Util.PluginMessage(message));
+            debug(message);
         }
 
         // Token: 0x0600001F RID: 31 RVA: 0x00004008 File Offset: 0x00002208
@@ -3683,6 +3746,11 @@ namespace COM3D2.Scriplay.Plugin
             }
         }
 
+        public static void error(string message)
+        {
+            UnityEngine.Debug.LogError(Util.PluginMessage(message));
+        }
+
         // Token: 0x06000020 RID: 32 RVA: 0x0000403C File Offset: 0x0000223C
         private static string PluginMessage(string originalMessage)
         {
@@ -3692,16 +3760,14 @@ namespace COM3D2.Scriplay.Plugin
         // Token: 0x06000021 RID: 33 RVA: 0x00004064 File Offset: 0x00002264
         public static int randomInt(int min, int max, List<int> excludeList = null)
         {
-            bool flag = min >= max;
             int result;
-            if (flag)
+            if (min >= max)
             {
                 result = min;
             }
             else
             {
-                bool flag2 = excludeList == null;
-                if (flag2)
+                if (excludeList == null)
                 {
                     excludeList = new List<int>();
                 }
@@ -3709,8 +3775,7 @@ namespace COM3D2.Scriplay.Plugin
                 List<int> list = Enumerable.Range(min, max).ToList<int>();
                 foreach (int item in excludeList)
                 {
-                    bool flag3 = list.Count == 1;
-                    if (flag3)
+                    if (list.Count == 1)
                     {
                         break;
                     }
@@ -3728,7 +3793,7 @@ namespace COM3D2.Scriplay.Plugin
             string result;
             if (flag)
             {
-                result = "(要素数\u3000０）";
+                result = "(요소 수\u3000０）";
             }
             else
             {
@@ -3810,20 +3875,36 @@ namespace COM3D2.Scriplay.Plugin
         {
             try
             {
-                bool flag = !addQue;
-                if (flag)
+                string ph = "";
+                ph = UTY.gameProjectPath + "\\PhotoModeData\\MyPose\\" + motionName;
+                byte[] array = new byte[0];
+                try
                 {
-                    maid.CrossFadeAbsolute(motionName, false, isLoop, false, fadeTime, 1f);
-                    maid.body0.m_Animation[motionName].speed = speed;
+                    using (FileStream fileStream = new FileStream(ph, FileMode.Open, FileAccess.Read))
+                    {
+                        array = new byte[fileStream.Length];
+                        fileStream.Read(array, 0, array.Length);
+                    }
                 }
-                else
+                catch
                 {
-                    maid.CrossFade(motionName, false, isLoop, true, fadeTime, 1f);
+                    debug("FileStream Fail:" + motionName);
+                }
+
+                debug("animate:motionName:" + ph);
+                if (array.Length != 0)
+                {
+                    //maid.CrossFadeAbsolute(ph, false, isLoop, addQue, fadeTime, 1f);
+                    maid.body0.CrossFade(motionName, array, false, isLoop, addQue, fadeTime, 1f);
+                    if (!addQue)
+                    {
+                        maid.body0.m_Animation[motionName].speed = speed;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Util.info("モーション再生失敗" + ex.Message + "\r\n" + ex.StackTrace);
+                Util.error("모션 재생 실패" + ex.Message + "\r\n" + ex.StackTrace);
             }
         }
 
@@ -3890,10 +3971,10 @@ namespace COM3D2.Scriplay.Plugin
             bool flag = false;
             foreach (string text in array)
             {
+
                 List<string> list2 = new List<string>();
                 int num = 0;
-                bool flag2 = !flag;
-                if (flag2)
+                if (!flag)
                 {
                     flag = true;
                 }
@@ -3914,8 +3995,10 @@ namespace COM3D2.Scriplay.Plugin
                             ','
                         }).ToArray<string>();
                     }
+                    StringBuilder sb = new StringBuilder();
                     foreach (string text2 in array3)
                     {
+                        sb.Append(":" + text2);
                         bool flag3 = text2 != "";
                         if (flag3)
                         {
@@ -3931,12 +4014,15 @@ namespace COM3D2.Scriplay.Plugin
                         }
                         num++;
                     }
+                    //Util.debug("ReadCsvFile:" + sb.ToString());
                     list.Add(list2.ToArray());
                 }
             }
-            Util.debug(string.Format("文字配列へ分割終了 {0}", file));
+            Util.debug(string.Format("문자 배열로 분할 종료 {0}", file));
             return list.ToArray();
         }
+
+
 
         // Token: 0x04000032 RID: 50
         private static string[] SucoreText = new string[]
