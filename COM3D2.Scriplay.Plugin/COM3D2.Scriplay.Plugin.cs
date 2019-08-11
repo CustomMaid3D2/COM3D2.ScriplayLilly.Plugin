@@ -12,7 +12,7 @@ using PluginExt;
 using UnityEngine.UI;
 using UnityInjector.Attributes;
 
-namespace COM3D2.Scriplay2.Plugin
+namespace COM3D2.ScriplayLilly.Plugin
 {
 
     // Token: 0x02000002 RID: 2
