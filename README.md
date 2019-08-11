@@ -2,17 +2,17 @@
 
 ## --- How to Instal ---
 
-### --- plugin isntall ---
+### plugin isntall
 
-Sybaris\UnityInjector
+- Sybaris\UnityInjector
 
-### --- csv isntall ---
+### csv isntall
 
-Sybaris\UnityInjector\Config\Scriplay\csv
+- Sybaris\UnityInjector\Config\Scriplay\csv
 
-### --- scripts isntall ---
+### scripts isntall
 
-Sybaris\UnityInjector\Config\Scriplay\scripts
+- Sybaris\UnityInjector\Config\Scriplay\scripts
 
 ## --- 기능 사항 ---
 
