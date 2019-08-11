@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.438
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29201.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "COM3D2.Scriplay.Plugin", "COM3D2.Scriplay.Plugin\COM3D2.Scriplay.Plugin.csproj", "{C403D5B6-F680-4BAE-ADEF-CD800B5C1300}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "COM3D2.ScriplayLilly.Plugin", "COM3D2.Scriplay.Plugin\COM3D2.ScriplayLilly.Plugin.csproj", "{C403D5B6-F680-4BAE-ADEF-CD800B5C1300}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

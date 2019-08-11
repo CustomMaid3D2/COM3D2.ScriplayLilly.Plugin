@@ -217,7 +217,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="COM3D2.Scriplay.Plugin.cs" />
+    <Compile Include="COM3D2.ScriplayLilly.Plugin.cs" />
     <EmbeddedResource Include="GearMenu.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
