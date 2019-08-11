@@ -12,7 +12,7 @@ using PluginExt;
 using UnityEngine.UI;
 using UnityInjector.Attributes;
 
-namespace COM3D2.Scriplay.Plugin
+namespace COM3D2.Scriplay2.Plugin
 {
 
     // Token: 0x02000002 RID: 2
@@ -23,7 +23,7 @@ namespace COM3D2.Scriplay.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("0.1.1.9")]
+    [PluginVersion("0.2.1")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
@@ -267,17 +267,17 @@ namespace COM3D2.Scriplay.Plugin
                 //bool scriptFinished = this.scriplayContext.scriptFinished;
                 //if (scriptFinished)
                 {
-                    this.node_main = GUI.Window(21, this.node_main, new GUI.WindowFunction(this.WindowCallback_mainUI), ScriplayPlugin.cfg.PluginName + " Main UI", guistyle);
+                    this.node_main = GUI.Window(31, this.node_main, new GUI.WindowFunction(this.WindowCallback_mainUI), ScriplayPlugin.cfg.PluginName + " Main UI", guistyle);
                 }
                 if (!this.scriplayContext.scriptFinished)
                 {
-                    this.node_showArea = GUI.Window(22, this.node_showArea, new GUI.WindowFunction(this.WindowCallback_showArea), "", guistyle);
+                    this.node_showArea = GUI.Window(32, this.node_showArea, new GUI.WindowFunction(this.WindowCallback_showArea), "", guistyle);
                 }
                 //bool flag3 =  this.scriplayContext.scriptFinished;
                 //bool flag3 = this.en_showScripts && this.scriplayContext.scriptFinished;
                 if (this.en_showScripts)
                 {
-                    this.node_scripts = GUI.Window(23, this.node_scripts, new GUI.WindowFunction(this.WindowCallback_scriptsView), ScriplayPlugin.cfg.PluginName + "스크립트 목록", guistyle);
+                    this.node_scripts = GUI.Window(33, this.node_scripts, new GUI.WindowFunction(this.WindowCallback_scriptsView), ScriplayPlugin.cfg.PluginName + "스크립트 목록", guistyle);
                 }
             }
         }
@@ -918,7 +918,7 @@ namespace COM3D2.Scriplay.Plugin
         private Rect node_main = new Rect((float)Screen.width - ScriplayPlugin.UIposX_rightMargin - ScriplayPlugin.UIwidth, (float)Screen.height - ScriplayPlugin.UIposY_bottomMargin - ScriplayPlugin.UIheight, ScriplayPlugin.UIwidth, ScriplayPlugin.UIheight);
 
         // Token: 0x04000012 RID: 18
-        private Rect node_scripts = new Rect((float)Screen.width - ScriplayPlugin.UIposX_rightMargin - ScriplayPlugin.UIwidth, (float)Screen.height - (ScriplayPlugin.UIheight + ScriplayPlugin.UIposY_bottomMargin) - ScriplayPlugin.UIheight, ScriplayPlugin.UIwidth, ScriplayPlugin.UIheight);
+        private Rect node_scripts = new Rect((float)Screen.width - ScriplayPlugin.UIposX_rightMargin - ScriplayPlugin.UIwidth/2, (float)Screen.height - (ScriplayPlugin.UIheight + ScriplayPlugin.UIposY_bottomMargin) - ScriplayPlugin.UIheight, ScriplayPlugin.UIwidth/2, ScriplayPlugin.UIheight);
 
         // Token: 0x04000013 RID: 19
         private static readonly float UIwidth_showArea = 400f;
@@ -2764,20 +2764,12 @@ namespace COM3D2.Scriplay.Plugin
                                                 if (ScriplayContext.reg_wait.IsMatch(text))
                                                 {
                                                     Match match = ScriplayContext.reg_wait.Match(text);
-                                                    if (match.Success)
-                                                    {
-                                                    string value2 = match.Groups[1].Value;
-                                                    this.selection_waitSecond = this.parseFloat(value2, new string[]
-                                                    {
-                                                        "sec",
-                                                        "s"
-                                                    });
-                                                    }
 
-                                                    if (match.Success)
-                                                    {
-                                                    string value3 = match.Groups[2].Value;                                                    
-                                                        this.selection_waitSecond += (float)(new System.Random().NextDouble()* this.parseFloat(value3));
+                                                    this.selection_waitSecond = this.parseFloat(match.Groups[1].Value, new string[] { "sec", "s" });
+
+                                                    if (match.Groups[2].Length > 0)
+                                                    {                                               
+                                                        this.selection_waitSecond += (float)(new System.Random().NextDouble()* this.parseFloat(match.Groups[2].Value));
                                                     }
 
                                                     break;
@@ -3600,7 +3592,7 @@ namespace COM3D2.Scriplay.Plugin
         private static Regex reg_face = new Regex("^@face\\s+(.+)", RegexOptions.IgnoreCase);
 
         // Token: 0x04000050 RID: 80
-        private static Regex reg_wait = new Regex("^@wait\\s+(\\d+)\\s*(\\d+)?", RegexOptions.IgnoreCase);
+        private static Regex reg_wait = new Regex("^@wait\\s+([\\d.]+)\\s*([\\d.]+)?", RegexOptions.IgnoreCase);
 
         // Token: 0x04000051 RID: 81
         private static Regex reg_goto = new Regex("^@goto\\s+(.+)", RegexOptions.IgnoreCase);

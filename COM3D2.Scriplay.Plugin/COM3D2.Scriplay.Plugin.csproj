@@ -7,8 +7,8 @@
     <ProjectGuid>{C403D5B6-F680-4BAE-ADEF-CD800B5C1300}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>COM3D2.Scriplay.Plugin</RootNamespace>
-    <AssemblyName>COM3D2.Scriplay.Plugin</AssemblyName>
+    <RootNamespace>COM3D2.Scriplay2.Plugin</RootNamespace>
+    <AssemblyName>COM3D2.Scriplay2.Plugin</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
