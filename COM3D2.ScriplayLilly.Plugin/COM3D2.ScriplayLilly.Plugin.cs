@@ -23,7 +23,7 @@ namespace COM3D2.ScriplayLilly.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("0.2.1")]
+    [PluginVersion("190827")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
@@ -621,14 +621,14 @@ namespace COM3D2.ScriplayLilly.Plugin
                 //    cnt_chg = ScriplayPlugin.maidList.Count;
                 //}
 
-
-                if (!this.scriplayContext.scriptFinished)
-                {
-                    this.scriplayContext.Update();
-                }
-
                 try
                 {
+
+                    if (!this.scriplayContext.scriptFinished)
+                    {
+                        this.scriplayContext.Update();
+                    }
+
                     foreach (ScriplayPlugin.IMaid maid in ScriplayPlugin.maidList)
                     {
                         Util.sw_start("");
@@ -641,9 +641,10 @@ namespace COM3D2.ScriplayLilly.Plugin
                         Util.sw_stop("");
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     this.initMaidList();
+                    UnityEngine.Debug.LogWarning("ScriplayPlugin.Update:" + e.ToString());
                 }
             }
         }
@@ -1572,15 +1573,16 @@ namespace COM3D2.ScriplayLilly.Plugin
             // Token: 0x0600006C RID: 108 RVA: 0x00007340 File Offset: 0x00005540
             private string _playVoice(string[] voiceList, bool isLoop = true, int exclusionVoiceIndex = -1, int forcedVoiceIndex = -1)
             {
-                bool flag = voiceList.Length == 0;
-                if (flag)
+               
+                if (voiceList.Length == 0)
                 {
                     Util.info("VoiceListが空です");
-                    throw new ArgumentException("VoiceListが空です");
+                    return "";
+                    //throw new ArgumentException("VoiceList가 비어 있습니다");
                 }
-                bool flag2 = forcedVoiceIndex == -1;
+                
                 int num;
-                if (flag2)
+                if (forcedVoiceIndex == -1)
                 {
                     num = Util.randomInt(0, voiceList.Length - 1, exclusionVoiceIndex);
                 }
@@ -1590,9 +1592,13 @@ namespace COM3D2.ScriplayLilly.Plugin
                 }
                 num = Mathf.Clamp(num, 0, voiceList.Length - 1);
                 string text = voiceList[num];
+                if (!text.EndsWith(".ogg"))
+                {
+                    text += ".ogg";
+                }
                 this.maid.AudioMan.LoadPlay(text, 0f, false, isLoop);
                 string arg = isLoop ? "반복 있음" : "반복 없음";
-                Util.info(string.Format("ボイスを再生：{0}, {1}", text, arg));
+                Util.info(string.Format("Scriplay : Play voice：{0}, {1}", text, arg));
                 return text;
             }
 
@@ -2608,7 +2614,7 @@ namespace COM3D2.ScriplayLilly.Plugin
         // Token: 0x06000036 RID: 54 RVA: 0x000048D4 File Offset: 0x00002AD4
         public void Update()
         {
-            //if (ScriplayPlugin.maidList.Count > 0)
+            if (ScriplayPlugin.maidList.Count > 0)
             {
                 if (this.waitSecond > 0f)
                 {
@@ -2653,12 +2659,9 @@ namespace COM3D2.ScriplayLilly.Plugin
                             foreach (KeyValuePair<int, bool> keyValuePair in this.talk_waitUntilFinishSpeekingDict)
                             {
                                 int key = keyValuePair.Key;
-                                bool value = keyValuePair.Value;
-                                bool flag8 = value;
-                                if (flag8)
+                                if (keyValuePair.Value)
                                 {
-                                    bool flag9 = ScriplayPlugin.maidList[key].isPlayingVoice();
-                                    if (flag9)
+                                    if (ScriplayPlugin.maidList[key].isPlayingVoice())
                                     {
                                         return;
                                     }
