@@ -23,7 +23,7 @@ namespace COM3D2.ScriplayLilly.Plugin
     [PluginFilter("COM3D2OHx86")]
     [PluginFilter("COM3D2OHVRx64")]
     [PluginName("Scriplay edit by lilly")]
-    [PluginVersion("190827")]
+    [PluginVersion("190927")]
     public class ScriplayPlugin : ExPluginBase
     {
         // Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
@@ -1598,7 +1598,7 @@ namespace COM3D2.ScriplayLilly.Plugin
                 }
                 this.maid.AudioMan.LoadPlay(text, 0f, false, isLoop);
                 string arg = isLoop ? "반복 있음" : "반복 없음";
-                Util.info(string.Format("Scriplay : Play voice：{0}, {1}", text, arg));
+                Util.info(string.Format("Play voice：{0}, {1}", text, arg));
                 return text;
             }
 
@@ -2661,11 +2661,21 @@ namespace COM3D2.ScriplayLilly.Plugin
                                 int key = keyValuePair.Key;
                                 if (keyValuePair.Value)
                                 {
-                                    if (ScriplayPlugin.maidList[key].isPlayingVoice())
+                                    try
                                     {
-                                        return;
+                                        if (ScriplayPlugin.maidList[key].isPlayingVoice())
+                                        {
+                                            return;
+                                        }
+                                        list.Add(key);
                                     }
-                                    list.Add(key);
+                                    catch (Exception e)
+                                    {
+                                        Util.error(e.ToString());
+                                        //return;
+                                        //throw;
+                                    }
+                                    
                                 }
                             }
                             foreach (int key2 in list)
@@ -3737,8 +3747,10 @@ namespace COM3D2.ScriplayLilly.Plugin
         // Token: 0x0600001E RID: 30 RVA: 0x00003FED File Offset: 0x000021ED
         public static void info(string message)
         {
-            //Console.WriteLine(Util.PluginMessage(message));
-            debug(message);
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(Util.PluginMessage(message));
+            Console.ResetColor();
+            //debug(message);
         }
 
         // Token: 0x0600001F RID: 31 RVA: 0x00004008 File Offset: 0x00002208
@@ -3747,13 +3759,18 @@ namespace COM3D2.ScriplayLilly.Plugin
             bool debugMode = ScriplayPlugin.cfg.debugMode;
             if (debugMode)
             {
-                UnityEngine.Debug.Log(Util.PluginMessage(message));
+                Console.WriteLine(Util.PluginMessage(message));
+                //UnityEngine.Debug.Log(Util.PluginMessage(message));
             }
         }
 
         public static void error(string message)
         {
-            UnityEngine.Debug.LogError(Util.PluginMessage(message));
+            
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(Util.PluginMessage(message));
+            Console.ResetColor();
+            //UnityEngine.Debug.LogError(Util.PluginMessage(message));
         }
 
         // Token: 0x06000020 RID: 32 RVA: 0x0000403C File Offset: 0x0000223C
