@@ -621,6 +621,21 @@ namespace COM3D2.ScriplayLilly.Plugin
                 //    cnt_chg = ScriplayPlugin.maidList.Count;
                 //}
 
+                // 창 위치 초기화
+                try
+                {
+                    if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && Input.GetKeyDown(KeyCode.R))
+                    {
+                        this.node_main.Set((float)Screen.width - ScriplayPlugin.UIposX_rightMargin - ScriplayPlugin.UIwidth, (float)Screen.height - ScriplayPlugin.UIposY_bottomMargin - ScriplayPlugin.UIheight, ScriplayPlugin.UIwidth, ScriplayPlugin.UIheight);
+                        this.node_scripts.Set((float)Screen.width - ScriplayPlugin.UIposX_rightMargin - ScriplayPlugin.UIwidth / 2, (float)Screen.height - (ScriplayPlugin.UIheight + ScriplayPlugin.UIposY_bottomMargin) - ScriplayPlugin.UIheight, ScriplayPlugin.UIwidth / 2, ScriplayPlugin.UIheight);
+                        this.node_showArea.Set((float)Screen.width - ScriplayPlugin.UIposX_rightMargin_showArea - ScriplayPlugin.UIwidth_showArea, (float)Screen.height - ScriplayPlugin.UIposY_bottomMargin_showArea - ScriplayPlugin.UIheight_showArea, ScriplayPlugin.UIwidth_showArea, ScriplayPlugin.UIheight_showArea);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UnityEngine.Debug.LogWarning("ScriplayPlugin:GetKeyDown" + ex.ToString());
+                }
+
                 try
                 {
 
